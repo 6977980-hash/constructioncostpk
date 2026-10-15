@@ -4,7 +4,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HCC_VERSION', '1.12.0' );
+define( 'HCC_VERSION', '1.12.1' );
 
 require get_template_directory() . '/inc/shortcode-calculator.php';
 // v1.8.0 SEO-audit implementation (see docs in the delivery package).
@@ -166,6 +166,8 @@ function hcc_page_definitions() {
 	$hcc_10m_url   = home_url( '/10-marla-house-construction-cost/' );
 	$hcc_1k_url    = home_url( '/1-kanal-house-construction-cost/' );
 	$hcc_marla_url = home_url( '/marla-kanal-standards-pakistan/' );
+	$hcc_cement_url = home_url( '/cement-rate-today-pakistan/' );
+	$hcc_steel_url  = home_url( '/steel-saria-rate-today/' );
 	$hcc_img_base  = get_template_directory_uri() . '/assets/img/';
 
 	$hcc_5marla_content = <<<HTML
@@ -203,8 +205,8 @@ function hcc_page_definitions() {
 <div class="table-scroll"><table class="mini-table">
 <thead><tr><th>Material</th><th>Approx. Quantity</th></tr></thead>
 <tbody>
-<tr><td>Cement</td><td>{$p5['q_cement']} bags</td></tr>
-<tr><td>Steel (saria)</td><td>{$p5['q_steel']} kg</td></tr>
+<tr><td><a href="{$hcc_cement_url}">Cement</a></td><td>{$p5['q_cement']} bags</td></tr>
+<tr><td><a href="{$hcc_steel_url}">Steel (saria)</a></td><td>{$p5['q_steel']} kg</td></tr>
 <tr><td>Bricks</td><td>{$p5['q_bricks']}</td></tr>
 <tr><td>Sand</td><td>{$p5['q_sand']} cft</td></tr>
 <tr><td>Crush (aggregate)</td><td>{$p5['q_crush']} cft</td></tr>
@@ -256,8 +258,8 @@ HTML;
 <div class="table-scroll"><table class="mini-table">
 <thead><tr><th>Material</th><th>Approx. Quantity</th></tr></thead>
 <tbody>
-<tr><td>Cement</td><td>{$p7['q_cement']} bags</td></tr>
-<tr><td>Steel (saria)</td><td>{$p7['q_steel']} kg</td></tr>
+<tr><td><a href="{$hcc_cement_url}">Cement</a></td><td>{$p7['q_cement']} bags</td></tr>
+<tr><td><a href="{$hcc_steel_url}">Steel (saria)</a></td><td>{$p7['q_steel']} kg</td></tr>
 <tr><td>Bricks</td><td>{$p7['q_bricks']}</td></tr>
 <tr><td>Sand</td><td>{$p7['q_sand']} cft</td></tr>
 <tr><td>Crush (aggregate)</td><td>{$p7['q_crush']} cft</td></tr>
@@ -308,8 +310,8 @@ HTML;
 <div class="table-scroll"><table class="mini-table">
 <thead><tr><th>Material</th><th>Approx. Quantity</th></tr></thead>
 <tbody>
-<tr><td>Cement</td><td>{$p10['q_cement']} bags</td></tr>
-<tr><td>Steel (saria)</td><td>{$p10['q_steel']} kg</td></tr>
+<tr><td><a href="{$hcc_cement_url}">Cement</a></td><td>{$p10['q_cement']} bags</td></tr>
+<tr><td><a href="{$hcc_steel_url}">Steel (saria)</a></td><td>{$p10['q_steel']} kg</td></tr>
 <tr><td>Bricks</td><td>{$p10['q_bricks']}</td></tr>
 <tr><td>Sand</td><td>{$p10['q_sand']} cft</td></tr>
 <tr><td>Crush (aggregate)</td><td>{$p10['q_crush']} cft</td></tr>
@@ -361,8 +363,8 @@ HTML;
 <div class="table-scroll"><table class="mini-table">
 <thead><tr><th>Material</th><th>Approx. Quantity</th></tr></thead>
 <tbody>
-<tr><td>Cement</td><td>{$p1k['q_cement']} bags</td></tr>
-<tr><td>Steel (saria)</td><td>{$p1k['q_steel']} kg</td></tr>
+<tr><td><a href="{$hcc_cement_url}">Cement</a></td><td>{$p1k['q_cement']} bags</td></tr>
+<tr><td><a href="{$hcc_steel_url}">Steel (saria)</a></td><td>{$p1k['q_steel']} kg</td></tr>
 <tr><td>Bricks</td><td>{$p1k['q_bricks']}</td></tr>
 <tr><td>Sand</td><td>{$p1k['q_sand']} cft</td></tr>
 <tr><td>Crush (aggregate)</td><td>{$p1k['q_crush']} cft</td></tr>

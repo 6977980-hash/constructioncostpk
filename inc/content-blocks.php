@@ -257,11 +257,15 @@ add_shortcode( 'hcc_steel_rate_table', 'hcc_sc_steel_rate_table' );
  * budget impact of a price move. Uses the engine's quantity factors.
  * ------------------------------------------------------------------------ */
 /** Material quantity table for one estimate — quantities come from the engine. */
+/** Material name linked to its rate page (internal links to the cement / saria guides). */
+function hcc_material_link( $slug, $label ) {
+	return hcc_page_exists( $slug ) ? '<a href="' . esc_url( hcc_page_url( $slug ) ) . '">' . esc_html( $label ) . '</a>' : esc_html( $label );
+}
 function hcc_qty_table( $e ) {
 	$qt = $e['qty'];
 	$rows = array(
-		array( 'Cement', number_format( round( $qt['cementBags'] ) ) . ' bags' ),
-		array( 'Steel (saria)', number_format( round( $qt['steelKg'] ) ) . ' kg' ),
+		array( hcc_material_link( 'cement-rate-today-pakistan', 'Cement' ), number_format( round( $qt['cementBags'] ) ) . ' bags' ),
+		array( hcc_material_link( 'steel-saria-rate-today', 'Steel (saria)' ), number_format( round( $qt['steelKg'] ) ) . ' kg' ),
 		array( 'Bricks', number_format( round( $qt['bricks'] ) ) ),
 		array( 'Sand', number_format( round( $qt['sandCft'] ) ) . ' cft' ),
 		array( 'Crush (aggregate)', number_format( round( $qt['crushCft'] ) ) . ' cft' ),
