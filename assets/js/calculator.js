@@ -578,6 +578,7 @@
     var result = computeEstimate(inputs);
     lastResult = result; lastInputs = inputs;
     renderResults(result, inputs);
+    updateShare(result, inputs);
     resetFeedback();
     track("calculate", { construction_type: inputs.constructionType, quality: inputs.quality, city: inputs.city, covered_area: Math.round(inputs.coveredArea || 0), value: Math.round(result.grandTotal) });
   });
@@ -600,6 +601,98 @@
     $("edit-inputs-btn").addEventListener("click", function () {
       $("calculator").scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  /* --------------------------------------------------------------------------
+     v1.11.0 — shareable result link (#est:...) and WhatsApp share. The link
+     carries only calculator inputs, in the URL hash, so nothing reaches the
+     server and every shared link opens the same estimate.
+  -------------------------------------------------------------------------- */
+  var SHARE_RATE_KEYS = { cement: "rc", steel: "rs", bricksPer1000: "rb", sand: "rn", crush: "rk", approvalPerMarla: "ra" };
+  function shareParams(inputs) {
+    var p = new URLSearchParams();
+    p.set("c", inputs.city); p.set("ps", inputs.plotSize); p.set("pu", inputs.plotUnit);
+    if (inputs.marlaToSqft !== 225 && (inputs.plotUnit === "marla" || inputs.plotUnit === "kanal")) p.set("ms", inputs.marlaToSqft);
+    p.set("ca", Math.round(inputs.coveredArea)); p.set("st", inputs.storeys);
+    p.set("t", inputs.constructionType); p.set("q", inputs.quality);
+    if (inputs.designComplexity !== "typical") p.set("d", inputs.designComplexity);
+    p.set("r", inputs.bedrooms + "-" + inputs.bathrooms + "-" + inputs.kitchens);
+    if (inputs.hasBasement) p.set("bs", Math.round(inputs.basementArea));
+    if (inputs.hasBoundaryWall) p.set("bw", Math.round(inputs.wallLength));
+    if (inputs.hasApprovalFee) p.set("ap", 1);
+    Object.keys(SHARE_RATE_KEYS).forEach(function (k) {
+      if (Math.abs(inputs.rates[k] - DEFAULT_RATES[k]) > 0.0001) p.set(SHARE_RATE_KEYS[k], inputs.rates[k]);
+    });
+    return p.toString();
+  }
+  function shareUrl(inputs) { return location.origin + location.pathname + "#est:" + shareParams(inputs); }
+  function updateShare(result, inputs) {
+    var wa = $("share-wa-btn");
+    if (!wa) return;
+    var url = shareUrl(inputs);
+    var text = "My house construction estimate: " + trimNum(String(inputs.plotSize)) + " " + unitLabel(inputs.plotUnit) + ", "
+      + (inputs.storeys === 1 ? "single storey" : inputs.storeys + " storeys") + ", " + Math.round(inputs.coveredArea).toLocaleString("en-US") + " sq ft, "
+      + cityLabel(inputs.city) + ", " + labelForType(inputs.constructionType).toLowerCase() + " (" + inputs.quality + "): "
+      + formatPKR(result.grandTotal) + " (" + toLacCroreLabel(result.grandTotal) + "). See the details or try your own: " + url;
+    wa.href = "https://wa.me/?text=" + encodeURIComponent(text);
+    try { history.replaceState(null, "", url); } catch (e) {}
+  }
+  if ($("share-wa-btn")) {
+    $("share-wa-btn").addEventListener("click", function () { track("share", { method: "whatsapp" }); });
+  }
+  if ($("copy-link-btn")) {
+    $("copy-link-btn").addEventListener("click", function () {
+      if (!lastInputs) return;
+      var url = shareUrl(lastInputs), note = $("share-note");
+      function done(ok) {
+        if (!note) return;
+        note.textContent = ok ? "Link copied. Anyone who opens it sees this same estimate." : "Copy this link: " + url;
+        note.hidden = false;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
+      else done(false);
+      track("share", { method: "copy_link" });
+    });
+  }
+  function setVal(el, v) { if (el && v !== null && v !== undefined && v !== "") el.value = v; }
+  function setRadio(name, v) {
+    var r = v ? form.querySelector('input[name="' + name + '"][value="' + String(v).replace(/[^a-z-]/g, "") + '"]') : null;
+    if (r) r.checked = true;
+  }
+  function loadSharedEstimate() {
+    if (location.hash.indexOf("#est:") !== 0) return;
+    var p;
+    try { p = new URLSearchParams(location.hash.slice(5)); } catch (e) { return; }
+    var city = p.get("c");
+    if (city && $("city") && $("city").querySelector('option[value="' + city.replace(/[^a-z-]/g, "") + '"]')) $("city").value = city;
+    if (["marla", "kanal", "sqft", "sqyd"].indexOf(p.get("pu")) >= 0) plotUnitSelect.value = p.get("pu");
+    setVal(plotSizeInput, p.get("ps"));
+    if (marlaStandardSelect && p.get("ms") && marlaStandardSelect.querySelector('option[value="' + parseFloat(p.get("ms")) + '"]')) marlaStandardSelect.value = String(parseFloat(p.get("ms")));
+    if (p.get("st") && storeysSelect.querySelector('option[value="' + parseInt(p.get("st"), 10) + '"]')) storeysSelect.value = String(parseInt(p.get("st"), 10));
+    coveredAreaTouched = false;
+    updatePlotHintAndSuggestion();
+    if (p.get("ca")) { setVal(coveredAreaInput, p.get("ca")); coveredAreaTouched = true; }
+    setRadio("construction-type", p.get("t"));
+    setRadio("quality", p.get("q"));
+    setRadio("design-complexity", p.get("d") || "typical");
+    var rooms = (p.get("r") || "").split("-");
+    setVal($("bedrooms"), rooms[0]); setVal($("bathrooms"), rooms[1]); setVal($("kitchens"), rooms[2]);
+    if (hasBasementCheckbox) {
+      hasBasementCheckbox.checked = p.has("bs");
+      if (basementAreaWrap) basementAreaWrap.hidden = !p.has("bs");
+      setVal(basementAreaInput, p.get("bs"));
+    }
+    if (hasWallCheckbox) {
+      hasWallCheckbox.checked = p.has("bw");
+      if (wallLengthWrap) wallLengthWrap.hidden = !p.has("bw");
+      if (p.has("bw")) { setVal(wallLengthInput, p.get("bw")); wallLengthTouched = true; }
+    }
+    if (hasApprovalCheckbox) hasApprovalCheckbox.checked = p.has("ap");
+    var rateIds = { cement: "rate-cement", steel: "rate-steel", bricksPer1000: "rate-bricks", sand: "rate-sand", crush: "rate-crush", approvalPerMarla: "rate-approval" };
+    Object.keys(SHARE_RATE_KEYS).forEach(function (k) { if (p.has(SHARE_RATE_KEYS[k])) setVal($(rateIds[k]), p.get(SHARE_RATE_KEYS[k])); });
+    updateQuickAnswer();
+    if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event("submit", { cancelable: true }));
+    track("shared_estimate_opened", {});
   }
 
   /* --------------------------------------------------------------------------
@@ -827,6 +920,7 @@
     if (preset) preset.checked = true;
   }
   applyDefaultType();
+  loadSharedEstimate();
   /* --------------------------------------------------------------------------
      v1.8.0 — analytics events (T7.2). Fires GA4 events only if gtag exists
      (i.e. the owner configured GA4); Clarity gets a custom tag. A DOM event

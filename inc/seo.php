@@ -123,9 +123,12 @@ function hcc_llms_txt() {
 	$t .= '- [House Construction Cost Calculator](' . home_url( '/' ) . "): main tool, all cities\n";
 	$t .= $line( 'grey-structure-cost-calculator', 'Grey Structure Cost Calculator' );
 	$t .= "\n## Cost guides\n";
-	foreach ( array( '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal' ) as $s ) {
+	foreach ( array_keys( hcc_plot_sizes() ) as $s ) {
 		$t .= $line( $s . '-house-construction-cost', ucwords( str_replace( '-', ' ', $s ) ) . ' house cost' );
 	}
+	$t .= $line( 'double-storey-house-construction-cost', 'Double storey house cost (all plot sizes)' );
+	$t .= $line( '120-sq-yard-house-construction-cost-karachi', '120 sq yd house cost in Karachi' );
+	$t .= $line( 'lanter-roof-slab-cost-pakistan', 'Lanter (roof slab) cost calculator' );
 	$t .= $line( 'marla-kanal-standards-pakistan', 'Marla & Kanal standards' );
 	$t .= $line( 'construction-cost-guides', 'All guides (hub)' );
 	$t .= "\n## Cities\n";

@@ -25,6 +25,8 @@ function hcc_live_page_slugs() {
 		'construction-cost-lahore', 'construction-cost-karachi', 'construction-cost-islamabad', 'construction-cost-by-city',
 		'construction-material-rates', 'cement-rate-today-pakistan', 'steel-saria-rate-today',
 		'pakistan-construction-cost-index', 'methodology', 'embed-construction-cost-calculator',
+		'6-marla-house-construction-cost', '8-marla-house-construction-cost', '2-kanal-house-construction-cost',
+		'double-storey-house-construction-cost', '120-sq-yard-house-construction-cost-karachi', 'lanter-roof-slab-cost-pakistan',
 	);
 }
 
@@ -35,6 +37,7 @@ function hcc_live_page_templates() {
 	$all = array();
 	foreach ( hcc_page_definitions() as $def ) $all[ $def['slug'] ] = $def['content'];
 	foreach ( hcc_v18_page_definitions() as $slug => $def ) $all[ $slug ] = $def['content'];
+	foreach ( hcc_v110_page_definitions() as $slug => $def ) $all[ $slug ] = $def['content'];
 	$cache = array_intersect_key( $all, array_flip( hcc_live_page_slugs() ) );
 	return $cache;
 }

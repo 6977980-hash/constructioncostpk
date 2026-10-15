@@ -99,6 +99,7 @@ function hcc_reference_links( $key ) {
 		'amreli' => array( 'Amreli Steels', 'https://www.amrelisteels.com/' ),
 		'mughal' => array( 'Mughal Steel', 'https://mughalsteel.com.pk/' ),
 		'agha' => array( 'Agha Steel', 'https://aghasteel.com/' ),
+		'slab' => array( 'SlabCostCalculator.com (our sister site): roof slab cost calculator', HCC_SLAB_SITE ),
 	);
 	$map = array(
 		'cement-rate-today-pakistan' => array( 'lucky', 'dgk', 'maple', 'bestway', 'pbs' ),
@@ -112,6 +113,9 @@ function hcc_reference_links( $key ) {
 		'methodology' => array( 'pbs', 'pec', 'lucky', 'amreli' ),
 		'grey-structure-cost-calculator' => array( 'pec', 'pbs', 'lucky', 'amreli' ),
 		'marla-kanal-standards-pakistan' => array( 'lda', 'cda', 'sbca' ),
+		'lanter-roof-slab-cost-pakistan' => array( 'slab', 'pec', 'lucky', 'amreli' ),
+		'double-storey-house-construction-cost' => array( 'slab', 'pec', 'pbs', 'lda' ),
+		'120-sq-yard-house-construction-cost-karachi' => array( 'sbca', 'pbs' ),
 	);
 	$keys = isset( $map[ $key ] ) ? $map[ $key ] : ( preg_match( '/-(marla|kanal)-house-construction-cost$/', (string) $key ) || 'home' === $key ? array( 'pbs', 'pec', 'lda', 'cda' ) : array() );
 	return array_values( array_intersect_key( $l, array_flip( $keys ) ) );

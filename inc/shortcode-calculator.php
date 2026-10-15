@@ -240,7 +240,7 @@ function hcc_default_calc_rates() {
 /** Allowed values of the shortcode's variant attribute. */
 function hcc_sanitize_variant( $variant ) {
 	$variant = (string) $variant;
-	$allowed = array( 'grey-structure', 'marla-standards', 'embed', '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal' );
+	$allowed = array_merge( array( 'grey-structure', 'marla-standards', 'embed', 'double-storey' ), array_keys( hcc_plot_sizes() ) );
 	foreach ( array_keys( hcc_city_labels() ) as $c ) $allowed[] = 'city-' . $c;
 	return in_array( $variant, $allowed, true ) ? $variant : 'grey-structure';
 }
@@ -249,6 +249,8 @@ function hcc_calculator_preset( $variant ) {
 	$presets = array(
 		'3-marla' => array( 3, 'marla', 1 ), '4-marla' => array( 4, 'marla', 1 ), '5-marla' => array( 5, 'marla', 1 ),
 		'7-marla' => array( 7, 'marla', 1 ), '10-marla' => array( 10, 'marla', 2 ), '1-kanal' => array( 1, 'kanal', 2 ),
+		'6-marla' => array( 6, 'marla', 1 ), '8-marla' => array( 8, 'marla', 2 ), '2-kanal' => array( 2, 'kanal', 2 ),
+		'double-storey' => array( 5, 'marla', 2 ),
 		// Karachi plots are sold in square yards; most 120 sq yd houses are ground + 1.
 		'city-karachi' => array( 120, 'sqyd', 2 ),
 		// Islamabad CDA plots are named by dimensions; 30×60 ft is the common size.
@@ -346,7 +348,7 @@ function hcc_material_labour_svg() {
 
 /** Pages whose own content opens with a "Quick answer" box. */
 function hcc_variant_has_own_quick_answer( $variant ) {
-	return in_array( $variant, array( '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal', 'marla-standards' ), true ) || 0 === strpos( $variant, 'city-' );
+	return isset( hcc_plot_sizes()[ $variant ] ) || 'marla-standards' === $variant || 0 === strpos( $variant, 'city-' );
 }
 
 /**
@@ -789,7 +791,12 @@ function house_cost_calculator_shortcode( $atts ) {
 			<div class="result-actions">
 				<button type="button" class="btn btn-primary" id="download-pdf-btn">Download PDF Report</button>
 				<button type="button" class="btn btn-secondary" id="edit-inputs-btn">Edit Inputs</button>
+				<?php if ( 'embed' !== $atts['variant'] ) : ?>
+				<a class="btn btn-whatsapp" id="share-wa-btn" href="https://wa.me/" target="_blank" rel="noopener">Share on WhatsApp</a>
+				<button type="button" class="btn btn-secondary" id="copy-link-btn">Copy result link</button>
+				<?php endif; ?>
 			</div>
+			<p class="hint share-note" id="share-note" hidden></p>
 			<?php if ( 'embed' !== $atts['variant'] ) echo hcc_feedback_widget_html(); ?>
 		</div>
 	</section>
@@ -1194,38 +1201,15 @@ function hcc_render_grey_structure_schema() {
  * ========================================================================== */
 
 function hcc_plot_size_meta() {
-	return array(
-		'3-marla' => array(
-			'label' => '3 Marla', 'url' => home_url( '/3-marla-house-construction-cost/' ),
-			'app_name' => '3 Marla House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-3-marla.png',
-		),
-		'4-marla' => array(
-			'label' => '4 Marla', 'url' => home_url( '/4-marla-house-construction-cost/' ),
-			'app_name' => '4 Marla House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-4-marla.png',
-		),
-		'5-marla' => array(
-			'label' => '5 Marla', 'url' => home_url( '/5-marla-house-construction-cost/' ),
-			'app_name' => '5 Marla House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-5-marla.png',
-		),
-		'7-marla' => array(
-			'label' => '7 Marla', 'url' => home_url( '/7-marla-house-construction-cost/' ),
-			'app_name' => '7 Marla House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-7-marla.png',
-		),
-		'10-marla' => array(
-			'label' => '10 Marla', 'url' => home_url( '/10-marla-house-construction-cost/' ),
-			'app_name' => '10 Marla House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-10-marla.png',
-		),
-		'1-kanal' => array(
-			'label' => '1 Kanal', 'url' => home_url( '/1-kanal-house-construction-cost/' ),
-			'app_name' => '1 Kanal House Construction Cost Calculator',
-			'image' => get_template_directory_uri() . '/assets/img/hero-1-kanal.png',
-		),
-	);
+	$out = array();
+	foreach ( hcc_plot_sizes() as $k => $p ) {
+		$out[ $k ] = array(
+			'label' => $p[0], 'url' => home_url( '/' . $k . '-house-construction-cost/' ),
+			'app_name' => $p[0] . ' House Construction Cost Calculator',
+			'image' => get_template_directory_uri() . '/assets/img/hero-' . $k . '.png',
+		);
+	}
+	return $out;
 }
 
 /**
@@ -1239,20 +1223,23 @@ function hcc_variant_note( $variant ) {
 	if ( 'marla-standards' === $variant ) {
 		return 'Want to see these standards applied to a real plot? Check the <a href="' . esc_url( home_url( '/7-marla-house-construction-cost/' ) ) . '">7 Marla plot size and cost</a>, our <a href="' . esc_url( home_url( '/5-marla-house-construction-cost/' ) ) . '">5 Marla</a>, <a href="' . esc_url( home_url( '/10-marla-house-construction-cost/' ) ) . '">10 Marla</a> and <a href="' . esc_url( home_url( '/1-kanal-house-construction-cost/' ) ) . '">1 Kanal</a> guides, or price just the structure with the <a href="' . esc_url( home_url( '/grey-structure-cost-calculator/' ) ) . '">grey structure calculator</a>. The full <a href="' . esc_url( home_url( '/' ) ) . '">House Construction Cost Calculator</a> handles any plot size and city.';
 	}
-	if ( 'grey-structure' === $variant || ! isset( $plots[ $variant ] ) ) {
-		return 'Want the full construction cost guide — grey vs complete vs turnkey, material vs labour split, 5/7/10 Marla &amp; 1 Kanal examples, and the complete FAQ? Read the <a href="' . esc_url( home_url( '/' ) ) . '">House Construction Cost Calculator &amp; Guide</a> on our home page.';
-	}
 	if ( 0 === strpos( $variant, 'city-' ) ) {
 		return 'Building somewhere else? Compare rates in our <a href="' . esc_url( home_url( '/construction-cost-by-city/' ) ) . '">city-by-city cost table</a>, or price the structure alone with the <a href="' . esc_url( home_url( '/grey-structure-cost-calculator/' ) ) . '">grey structure calculator</a>.';
+	}
+	if ( 'grey-structure' === $variant || ! isset( $plots[ $variant ] ) ) {
+		return 'Want the full construction cost guide — grey vs complete vs turnkey, material vs labour split, 5/7/10 Marla &amp; 1 Kanal examples, and the complete FAQ? Read the <a href="' . esc_url( home_url( '/' ) ) . '">House Construction Cost Calculator &amp; Guide</a> on our home page.';
 	}
 	// Anchor text rotates per page so the same phrase isn't repeated site-wide (L3).
 	$anchors = array(
 		'3-marla'  => 'cost of a 3 Marla home',
 		'4-marla'  => '4 Marla construction budget',
 		'5-marla'  => '5 Marla house estimate',
-		'7-marla'  => 'what a 7 Marla house costs',
+		'7-marla'  => '7 Marla house cost',
 		'10-marla' => '10 Marla double storey cost',
 		'1-kanal'  => '1 Kanal build budget',
+		'6-marla'  => '6 Marla house cost',
+		'8-marla'  => '8 Marla double storey estimate',
+		'2-kanal'  => '2 Kanal house budget',
 	);
 	$keys = array_keys( $plots );
 	$i = array_search( $variant, $keys, true );
@@ -1344,14 +1331,8 @@ function hcc_variant_schema( $variant ) {
  * never contradict each other or the live calculator.
  */
 function hcc_plot_size_faq_items( $variant ) {
-	$sizes = array(
-		'3-marla'  => array( 'label' => '3 Marla',  'plotSqft' => 3 * 225,  'storeys' => 1 ),
-		'4-marla'  => array( 'label' => '4 Marla',  'plotSqft' => 4 * 225,  'storeys' => 1 ),
-		'5-marla'  => array( 'label' => '5 Marla',  'plotSqft' => 5 * 225,  'storeys' => 1 ),
-		'7-marla'  => array( 'label' => '7 Marla',  'plotSqft' => 7 * 225,  'storeys' => 1 ),
-		'10-marla' => array( 'label' => '10 Marla', 'plotSqft' => 10 * 225, 'storeys' => 2 ),
-		'1-kanal'  => array( 'label' => '1 Kanal',  'plotSqft' => 4500,     'storeys' => 2 ),
-	);
+	$sizes = array();
+	foreach ( hcc_plot_sizes() as $k => $p ) $sizes[ $k ] = array( 'label' => $p[0], 'plotSqft' => $p[1], 'storeys' => $p[2] );
 	if ( ! isset( $sizes[ $variant ] ) ) return array();
 	$s = $sizes[ $variant ];
 	$covered = hcc_suggest_covered_area( $s['plotSqft'], $s['storeys'] );
@@ -1371,7 +1352,7 @@ function hcc_plot_size_faq_items( $variant ) {
 	$steel  = round( $grey['qty']['steelKg'] );
 	$bricks = round( $grey['qty']['bricks'] );
 
-	$plot_desc = ( '1-kanal' === $variant ) ? '1 Kanal (4,500 sq ft)' : $s['label'] . ' (' . number_format( $s['plotSqft'] ) . ' sq ft)';
+	$plot_desc = false !== strpos( $variant, 'kanal' ) ? $s['label'] . ' (' . number_format( $s['plotSqft'] ) . ' sq ft)' : $s['label'] . ' (' . number_format( $s['plotSqft'] ) . ' sq ft)';
 	$storey_word = 1 === $s['storeys'] ? 'single storey' : ( $s['storeys'] . '-storey' );
 	$double = 1 === $s['storeys'] ? hcc_estimate( $s['plotSqft'], 2 ) : null;
 	$storey_answer = 1 === $s['storeys']
@@ -1442,6 +1423,11 @@ function hcc_marla_standards_faq_items() {
 function hcc_faq_shortcode( $atts ) {
 	$a = shortcode_atts( array( 'variant' => 'grey-structure' ), $atts );
 	if ( 0 === strpos( $a['variant'], 'mat-' ) ) return hcc_material_faq_render( substr( $a['variant'], 4 ) );
+	$pages = hcc_v110_faq_pages();
+	if ( 0 === strpos( $a['variant'], 'page-' ) ) {
+		$k = substr( $a['variant'], 5 );
+		return isset( $pages[ $k ] ) ? hcc_v110_faq_render( $k, $pages[ $k ], 'Quick, direct answers, including a question in Roman Urdu.' ) : '';
+	}
 	return hcc_render_faq_custom( hcc_variant_faq_items( $a['variant'] ), hcc_variant_faq_intro( $a['variant'] ) ) . hcc_variant_schema( $a['variant'] );
 }
 add_shortcode( 'hcc_faq', 'hcc_faq_shortcode' );

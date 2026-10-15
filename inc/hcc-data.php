@@ -116,6 +116,18 @@ function hcc_city_labels() {
  * Page registry. cluster: plot | city | material | core | trust.
  * type: calculator (has a calculator), guide (article), hub, trust, legal.
  * ------------------------------------------------------------------------ */
+/** v1.11 — every plot-size guide: variant => array( label, plot sq ft, usual storeys ). */
+function hcc_plot_sizes() {
+	return array(
+		'3-marla' => array( '3 Marla', 675, 1 ), '4-marla' => array( '4 Marla', 900, 1 ), '5-marla' => array( '5 Marla', 1125, 1 ),
+		'6-marla' => array( '6 Marla', 1350, 1 ), '7-marla' => array( '7 Marla', 1575, 1 ), '8-marla' => array( '8 Marla', 1800, 2 ),
+		'10-marla' => array( '10 Marla', 2250, 2 ), '1-kanal' => array( '1 Kanal', 4500, 2 ), '2-kanal' => array( '2 Kanal', 9000, 2 ),
+	);
+}
+/** variant => array( plot sq ft, storeys ). */
+function hcc_plot_sizes_sqft() {
+	return array_map( function ( $s ) { return array( $s[1], $s[2] ); }, hcc_plot_sizes() );
+}
 function hcc_page_registry() {
 	return array(
 		'home' => array( 'cluster' => 'core', 'type' => 'calculator', 'label' => 'House Construction Cost Calculator', 'card' => 'Main calculator — any plot size, 11 cities, PDF report' ),
@@ -123,14 +135,20 @@ function hcc_page_registry() {
 		'3-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '3 Marla House Cost', 'card' => '675 sq ft plot — compact single storey budget', 'hero' => 'hero-3-marla' ),
 		'4-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '4 Marla House Cost', 'card' => '900 sq ft plot — 2-bedroom family home', 'hero' => 'hero-4-marla' ),
 		'5-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '5 Marla House Cost', 'card' => '1,125 sq ft plot — the most common first home', 'hero' => 'hero-5-marla' ),
+		'6-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '6 Marla House Cost', 'card' => '1,350 sq ft plot — 3 bedrooms on one floor', 'hero' => 'hero-6-marla' ),
 		'7-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '7 Marla House Cost', 'card' => '1,575 sq ft plot — 3-bedroom step-up size', 'hero' => 'hero-7-marla' ),
+		'8-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '8 Marla House Cost', 'card' => '1,800 sq ft plot — 30 × 60 double storey', 'hero' => 'hero-8-marla' ),
 		'10-marla-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '10 Marla House Cost', 'card' => '2,250 sq ft plot — double storey, 4–5 bedrooms', 'hero' => 'hero-10-marla' ),
 		'1-kanal-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '1 Kanal House Cost', 'card' => '4,500 sq ft plot — large double storey home', 'hero' => 'hero-1-kanal' ),
+		'2-kanal-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => '2 Kanal House Cost', 'card' => '9,000 sq ft plot — large family home', 'hero' => 'hero-2-kanal' ),
+		'double-storey-house-construction-cost' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => 'Double Storey House Cost', 'card' => 'Single vs double storey for every plot size' ),
+		'lanter-roof-slab-cost-pakistan' => array( 'cluster' => 'material', 'type' => 'calculator', 'label' => 'Lanter (Roof Slab) Cost', 'card' => 'Cement, steel & cost per sq ft of roof slab' ),
 		'marla-kanal-standards-pakistan' => array( 'cluster' => 'plot', 'type' => 'calculator', 'label' => 'Marla & Kanal Standards', 'card' => '225, 250, 272 or 272.25 sq ft per Marla?', 'hero' => 'hero-marla-standards' ),
 		'construction-cost-guides' => array( 'cluster' => 'plot', 'type' => 'hub', 'label' => 'All Cost Guides (Plot Sizes)', 'card' => 'Every plot-size guide in one place' ),
 		'construction-cost-by-city' => array( 'cluster' => 'city', 'type' => 'hub', 'label' => 'Construction Cost by City', 'card' => 'Per sq ft rates for 11 Pakistani cities' ),
 		'construction-cost-lahore' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Lahore', 'card' => 'LDA, DHA & Bahria — Lahore per sq ft rates' ),
 		'construction-cost-karachi' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Karachi', 'card' => '120 / 240 / 400 sq yd plots, SBCA approvals' ),
+		'120-sq-yard-house-construction-cost-karachi' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => '120 Sq Yard House Cost (Karachi)', 'card' => '1,080 sq ft plot — ground + 1 budget' ),
 		'construction-cost-islamabad' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Islamabad', 'card' => 'CDA sector plot sizes & per sq ft rates' ),
 		'construction-material-rates' => array( 'cluster' => 'material', 'type' => 'hub', 'label' => 'Construction Material Rates', 'card' => 'Cement, steel, bricks, sand & crush rates' ),
 		'cement-rate-today-pakistan' => array( 'cluster' => 'material', 'type' => 'guide', 'label' => 'Cement Rate in Pakistan', 'card' => 'Bag price, bags per house & price impact' ),
@@ -220,7 +238,31 @@ function hcc_seo_meta_map() {
 		),
 		'construction-cost-guides' => array(
 			'title' => 'Construction Cost Guides Pakistan ' . $y . ' – Marla, Kanal & Per Sq Ft',
-			'desc'  => 'Every ConstructionCostPK guide in one place: 3 to 10 Marla and 1 Kanal house costs, grey structure, city rates and material prices, with ' . $y . ' figures.',
+			'desc'  => 'Every ConstructionCostPK guide in one place: 3 Marla to 2 Kanal house costs, double storey, grey structure, lanter, city rates and material prices (' . $y . ').',
+		),
+		'6-marla-house-construction-cost' => array(
+			'title' => '6 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 1350, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 1350, 2 )['grandTotal'] ) . ' Double',
+			'desc'  => '6 Marla (1,350 sq ft) house in ' . $y . ': about PKR ' . hcc_lakh_crore( hcc_estimate( 1350, 1 )['grandTotal'] ) . ' single storey or ' . hcc_lakh_crore( hcc_estimate( 1350, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 1350, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
+		),
+		'8-marla-house-construction-cost' => array(
+			'title' => '8 Marla House Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1800, 2 )['grandTotal'] ) . ' Double Storey',
+			'desc'  => '8 Marla (1,800 sq ft, 30 × 60) double storey house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1800, 2 )['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( hcc_estimate( 1800, 2, 'grey' )['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator.',
+		),
+		'2-kanal-house-construction-cost' => array(
+			'title' => '2 Kanal House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 9000, 2 )['grandTotal'] ),
+			'desc'  => 'A double storey 2 Kanal (9,000 sq ft) house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 9000, 2 )['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( hcc_estimate( 9000, 2, 'grey' )['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator.',
+		),
+		'double-storey-house-construction-cost' => array(
+			'title' => 'Double Storey House Cost in Pakistan ' . $y . ' (All Plot Sizes)',
+			'desc'  => 'Double storey house cost ' . $y . ': 5 Marla about PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 2 )['grandTotal'] ) . ', 10 Marla PKR ' . hcc_lakh_crore( hcc_estimate( 2250, 2 )['grandTotal'] ) . '. Single vs double storey for 3 Marla to 2 Kanal, with calculator.',
+		),
+		'120-sq-yard-house-construction-cost-karachi' => array(
+			'title' => '120 Sq Yard House Cost Karachi ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1080, 2, 'complete', 'standard', 'karachi' )['grandTotal'] ),
+			'desc'  => '120 gaz (1,080 sq ft) ground + 1 house in Karachi costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1080, 2, 'complete', 'standard', 'karachi' )['grandTotal'] ) . ' complete, PKR ' . hcc_lakh_crore( hcc_estimate( 1080, 2, 'grey', 'standard', 'karachi' )['grandTotal'] ) . ' grey structure (' . $y . '). Calculator inside.',
+		),
+		'lanter-roof-slab-cost-pakistan' => array(
+			'title' => 'Lanter Cost per Sq Ft ' . $y . ': PKR ' . number_format( round( hcc_lanter_qty( 1000 )['per_sqft'] ) ) . ' Material (Calculator)',
+			'desc'  => 'Lanter (roof slab) cost in Pakistan: about PKR ' . number_format( round( hcc_lanter_qty( 1000 )['per_sqft'] ) ) . '/sq ft material for 5 inch 1:2:4. Cement bags, steel kg and cost for any area (' . $y . ').',
 		),
 		'about-us' => array(
 			'title' => 'About ConstructionCostPK – Who Builds This Calculator',

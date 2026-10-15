@@ -134,25 +134,29 @@ add_shortcode( 'hcc_city_table', 'hcc_sc_city_table' );
  * Plot-size tables for the new 3 / 4 Marla pages.
  * ------------------------------------------------------------------------ */
 function hcc_sc_plot_tables( $atts ) {
-	$a = shortcode_atts( array( 'marla' => 3, 'storeys' => 1, 'part' => 'cost' ), $atts );
-	$plot = (float) $a['marla'] * 225;
+	$a = shortcode_atts( array( 'marla' => 3, 'sqyd' => 0, 'storeys' => 1, 'part' => 'cost', 'city' => 'lahore', 'options' => '1,2' ), $atts );
+	$plot = $a['sqyd'] ? (float) $a['sqyd'] * 9 : (float) $a['marla'] * 225;
 	$st = max( 1, (int) $a['storeys'] );
+	$city = isset( hcc_city_labels()[ $a['city'] ] ) ? $a['city'] : 'lahore';
 	if ( 'qty' === $a['part'] ) {
-		return hcc_qty_table( hcc_estimate( $plot, $st, 'grey' ) );
+		return hcc_qty_table( hcc_estimate( $plot, $st, 'grey', 'standard', $city ) );
 	}
 	if ( 'storeys' === $a['part'] ) {
 		$rows = array();
-		foreach ( array( 1, 2 ) as $s ) {
-			$c = hcc_estimate( $plot, $s ); $g = hcc_estimate( $plot, $s, 'grey' );
-			$rows[] = array( 1 === $s ? 'Single storey' : 'Double storey', number_format( $c['covered'] ) . ' sq ft', hcc_pkr( $g['grandTotal'] ), hcc_pkr( $c['grandTotal'] ) );
+		$names = array( 1 => 'Single storey', 2 => 'Double storey', 3 => 'Three storeys' );
+		if ( 'karachi' === $city ) $names = array( 1 => 'Ground floor only', 2 => 'Ground + 1', 3 => 'Ground + 2' );
+		foreach ( array_map( 'intval', explode( ',', $a['options'] ) ) as $s ) {
+			if ( ! isset( $names[ $s ] ) ) continue;
+			$c = hcc_estimate( $plot, $s, 'complete', 'standard', $city ); $g = hcc_estimate( $plot, $s, 'grey', 'standard', $city );
+			$rows[] = array( $names[ $s ], number_format( $c['covered'] ) . ' sq ft', hcc_pkr( $g['grandTotal'] ), hcc_pkr( $c['grandTotal'] ) );
 		}
 		return hcc_table( array( 'Option', 'Covered area', 'Grey structure', 'Complete (standard)' ), $rows );
 	}
 	$rows = array();
-	$g = hcc_estimate( $plot, $st, 'grey' );
+	$g = hcc_estimate( $plot, $st, 'grey', 'standard', $city );
 	$rows[] = array( 'Grey structure only', hcc_pkr( $g['costPerSqft'] ), hcc_pkr( $g['grandTotal'] ) );
 	foreach ( array( 'economy', 'standard', 'premium' ) as $q ) {
-		$c = hcc_estimate( $plot, $st, 'complete', $q );
+		$c = hcc_estimate( $plot, $st, 'complete', $q, $city );
 		$rows[] = array( 'Complete house — ' . $q . ' quality', hcc_pkr( $c['costPerSqft'] ), hcc_pkr( $c['grandTotal'] ) );
 	}
 	return hcc_table( array( 'Construction type', 'Cost / sq ft', 'Estimated total' ), $rows );
@@ -173,8 +177,8 @@ function hcc_num( $n, $dec = 0 ) {
 function hcc_sc_size_box( $atts ) {
 	$a = shortcode_atts( array( 'marla' => 5 ), $atts );
 	$m = max( 0.5, (float) $a['marla'] );
-	$label = 20 == $m ? '1 Kanal (20 Marla)' : hcc_num( $m, 1 ) . ' Marla';
-	$dims = array( '3' => '22.5 × 30 ft or 20 × 34 ft', '4' => '25 × 36 ft', '5' => '25 × 45 ft', '7' => '35 × 45 ft', '10' => 'about 35 × 65 ft', '20' => '50 × 90 ft' );
+	$label = 0 == fmod( $m, 20 ) ? hcc_num( $m / 20 ) . ' Kanal (' . hcc_num( $m ) . ' Marla)' : hcc_num( $m, 1 ) . ' Marla';
+	$dims = array( '3' => '22.5 × 30 ft or 20 × 34 ft', '4' => '25 × 36 ft', '5' => '25 × 45 ft', '6' => '30 × 45 ft', '7' => '35 × 45 ft', '8' => '30 × 60 ft', '10' => 'about 35 × 65 ft', '20' => '50 × 90 ft', '40' => '75 × 120 ft or 90 × 100 ft' );
 	$k = hcc_num( $m, 1 );
 	$sq = $m * 225;
 	$rows = array();
@@ -327,11 +331,14 @@ add_shortcode( 'hcc_hub_list', 'hcc_sc_hub_list' );
 /** O3.8 — headline figure per guide, computed live from the engine. */
 function hcc_headline_figures() {
 	$f = array();
-	foreach ( array( '3-marla' => array( 675, 1 ), '4-marla' => array( 900, 1 ), '5-marla' => array( 1125, 1 ), '7-marla' => array( 1575, 1 ), '10-marla' => array( 2250, 2 ), '1-kanal' => array( 4500, 2 ) ) as $k => $p ) {
+	foreach ( hcc_plot_sizes_sqft() as $k => $p ) {
 		$f[ $k . '-house-construction-cost' ] = '≈ PKR ' . hcc_lakh_crore( hcc_estimate( $p[0], $p[1] )['grandTotal'] ) . ' complete';
 	}
 	$f['grey-structure-cost-calculator'] = '≈ ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey' ) ) . ' / sq ft';
 	$f['marla-kanal-standards-pakistan'] = '1 Marla = 225–272.25 sq ft';
+	$f['double-storey-house-construction-cost'] = '≈ ' . hcc_format_pkr( hcc_estimate( 1125, 2 )['costPerSqft'] ) . ' / sq ft complete';
+	$f['120-sq-yard-house-construction-cost-karachi'] = '≈ PKR ' . hcc_lakh_crore( hcc_estimate( 1080, 2, 'complete', 'standard', 'karachi' )['grandTotal'] ) . ' ground + 1';
+	$f['lanter-roof-slab-cost-pakistan'] = '≈ ' . hcc_format_pkr( hcc_lanter_qty( 1000 )['per_sqft'] ) . ' / sq ft material';
 	foreach ( array( 'lahore', 'karachi', 'islamabad' ) as $c ) {
 		$f[ 'construction-cost-' . $c ] = '≈ ' . hcc_format_pkr( hcc_rate_per_sqft( 'complete', $c ) ) . ' / sq ft';
 	}
@@ -498,7 +505,7 @@ function hcc_city_faq_items( $city ) {
 }
 
 function hcc_roman_urdu_faq_items( $variant ) {
-	$sizes = array( '3-marla' => array( '3 marla', 675, 1 ), '4-marla' => array( '4 marla', 900, 1 ), '5-marla' => array( '5 marla', 1125, 1 ), '7-marla' => array( '7 marla', 1575, 1 ), '10-marla' => array( '10 marla', 2250, 2 ), '1-kanal' => array( '1 kanal', 4500, 2 ) );
+	$sizes = array_map( function ( $s ) { return array( strtolower( $s[0] ), $s[1], $s[2] ); }, hcc_plot_sizes() );
 	if ( isset( $sizes[ $variant ] ) ) {
 		$s = $sizes[ $variant ];
 		$c = hcc_estimate( $s[1], $s[2] ); $g = hcc_estimate( $s[1], $s[2], 'grey' );

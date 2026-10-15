@@ -4,7 +4,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HCC_VERSION', '1.10.0' );
+define( 'HCC_VERSION', '1.11.0' );
 
 require get_template_directory() . '/inc/shortcode-calculator.php';
 // v1.8.0 SEO-audit implementation (see docs in the delivery package).
@@ -14,6 +14,7 @@ require get_template_directory() . '/inc/content-enhance.php';
 require get_template_directory() . '/inc/seo.php';
 require get_template_directory() . '/inc/features.php';
 require get_template_directory() . '/inc/pages-v18.php';
+require get_template_directory() . '/inc/pages-v110.php';
 require get_template_directory() . '/inc/migrations.php';
 // v1.9.0: theme pages render live from their templates ([hcc_page]).
 require get_template_directory() . '/inc/live-pages.php';
@@ -428,15 +429,25 @@ HTML;
 [house_cost_calculator mode="calculator_only" variant="marla-standards" default_type="complete"]
 HTML;
 
+	$hcc_u = array();
+	foreach ( array( '3-marla', '4-marla', '6-marla', '8-marla', '2-kanal', 'double-storey' ) as $k ) $hcc_u[ $k . '-house-construction-cost' ] = esc_url( home_url( '/' . $k . '-house-construction-cost/' ) );
+	foreach ( array( '120-sq-yard-house-construction-cost-karachi', 'lanter-roof-slab-cost-pakistan' ) as $k ) $hcc_u[ $k ] = esc_url( home_url( '/' . $k . '/' ) );
 	$hcc_guides_content = <<<HTML
 <p>Every construction-cost guide on this site in one place, organized by category. Each guide uses the same calculation engine as the main <a href="{$hcc_home}">House Construction Cost Calculator</a>, so figures never contradict each other — pick the one closest to your own plot and refine it with the calculator embedded on that page.</p>
 
 <h2>By Plot Size</h2>
 <ul>
+<li><strong><a href="{$hcc_u['3-marla-house-construction-cost']}">3 Marla House Construction Cost</a></strong> — a 675 sq ft plot, usually built double storey.</li>
+<li><strong><a href="{$hcc_u['4-marla-house-construction-cost']}">4 Marla House Construction Cost</a></strong> — a 900 sq ft plot for a 2-bedroom family home.</li>
 <li><strong><a href="{$hcc_5m_url}">5 Marla House Construction Cost</a></strong> — grey structure, complete house cost per sq ft and material quantities for a 1,125 sq ft plot.</li>
+<li><strong><a href="{$hcc_u['6-marla-house-construction-cost']}">6 Marla House Construction Cost</a></strong> — a 1,350 sq ft plot with room for 3 bedrooms on one floor.</li>
 <li><strong><a href="{$hcc_7m_url}">7 Marla House Construction Cost</a></strong> — the same breakdown for a 1,575 sq ft plot, a common single-storey family home size.</li>
+<li><strong><a href="{$hcc_u['8-marla-house-construction-cost']}">8 Marla House Construction Cost</a></strong> — a 1,800 sq ft (30 × 60) plot, usually double storey.</li>
 <li><strong><a href="{$hcc_10m_url}">10 Marla House Construction Cost</a></strong> — a 2,250 sq ft plot, usually built double storey with 4–5 bedrooms.</li>
 <li><strong><a href="{$hcc_1k_url}">1 Kanal House Construction Cost</a></strong> — a 4,500 sq ft plot, the largest of the commonly built residential sizes.</li>
+<li><strong><a href="{$hcc_u['2-kanal-house-construction-cost']}">2 Kanal House Construction Cost</a></strong> — a 9,000 sq ft plot for a large double storey home.</li>
+<li><strong><a href="{$hcc_u['double-storey-house-construction-cost']}">Double Storey House Cost</a></strong> — single vs double storey cost for every plot size.</li>
+<li><strong><a href="{$hcc_u['120-sq-yard-house-construction-cost-karachi']}">120 Sq Yard House Cost in Karachi</a></strong> — ground + 1 budget for a 1,080 sq ft plot.</li>
 </ul>
 
 <h2>Land Measurement Reference</h2>
@@ -447,6 +458,7 @@ HTML;
 <h2>Structural Budgeting</h2>
 <ul>
 <li><strong><a href="{$hcc_grey_url}">Grey Structure Cost Calculator</a></strong> — a dedicated tool for pricing the structural shell only, for anyone building in phases.</li>
+<li><strong><a href="{$hcc_u['lanter-roof-slab-cost-pakistan']}">Lanter (Roof Slab) Cost Calculator</a></strong> — cement, steel and material cost per sq ft of an RCC roof slab.</li>
 </ul>
 
 <h2>Calculate Your Own Cost</h2>
@@ -626,6 +638,7 @@ function hcc_create_pages_and_menu() {
 }
 add_action( 'after_switch_theme', 'hcc_create_pages_and_menu' );
 add_action( 'after_switch_theme', function () {
+	hcc_ensure_v110_pages();
 	hcc_ensure_plot_thumbnails();
 	hcc_run_v18_migration();
 	hcc_run_v19_migration();
@@ -651,6 +664,7 @@ function hcc_maybe_sync_pages() {
 	// requests — only run the sync for a logged-in administrator.
 	if ( wp_doing_ajax() || ! current_user_can( 'manage_options' ) ) return;
 	hcc_create_pages_and_menu();
+	hcc_ensure_v110_pages();
 	hcc_ensure_plot_thumbnails();
 	hcc_ensure_guides_nav_item();
 	hcc_run_v18_migration();
@@ -733,7 +747,7 @@ function hcc_ensure_guides_nav_item() {
  */
 function hcc_plot_thumbnail_defs() {
 	$defs = array();
-	foreach ( array( '3-marla' => array( '3 Marla', 675, 1 ), '4-marla' => array( '4 Marla', 900, 1 ), '5-marla' => array( '5 Marla', 1125, 1 ), '7-marla' => array( '7 Marla', 1575, 1 ), '10-marla' => array( '10 Marla', 2250, 2 ), '1-kanal' => array( '1 Kanal', 4500, 2 ) ) as $k => $p ) {
+	foreach ( hcc_plot_sizes() as $k => $p ) {
 		$defs[ $k . '-house-construction-cost' ] = array(
 			'file' => 'hero-' . $k . '.png',
 			'alt'  => $p[0] . ' plot size infographic for Pakistan: a ' . number_format( $p[1] ) . ' sq ft plot with an estimated ' . number_format( hcc_suggest_covered_area( $p[1], $p[2] ) ) . ' sq ft ' . ( 1 === $p[2] ? 'single' : 'double' ) . ' storey covered area',

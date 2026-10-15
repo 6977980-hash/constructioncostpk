@@ -54,7 +54,7 @@ function hcc_render_status_page() {
 	$log = (array) get_option( 'hcc_migration_log', array() );
 	echo '<div class="wrap"><h1>ConstructionCostPK — SEO status</h1>';
 	echo '<h2>Live calculator figures (use these when updating titles)</h2><table class="widefat striped"><thead><tr><th>Page</th><th>Complete (Lahore, standard)</th><th>Grey</th><th>Current Rank Math title</th></tr></thead><tbody>';
-	foreach ( array( '3-marla' => array( 675, 1 ), '4-marla' => array( 900, 1 ), '5-marla' => array( 1125, 1 ), '7-marla' => array( 1575, 1 ), '10-marla' => array( 2250, 2 ), '1-kanal' => array( 4500, 2 ) ) as $k => $p ) {
+	foreach ( hcc_plot_sizes_sqft() as $k => $p ) {
 		$slug = $k . '-house-construction-cost';
 		$page = get_page_by_path( $slug );
 		$t = $page ? get_post_meta( $page->ID, 'rank_math_title', true ) : '';
