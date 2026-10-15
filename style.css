@@ -4,7 +4,7 @@ Theme URI: https://constructioncostpk.com/
 Author: Ali Ahmad (ConstructionCostPK)
 Author URI: https://constructioncostpk.com/about-us/
 Description: A fast, SEO-optimized WordPress theme built around a free house construction cost calculator for Pakistan — grey structure, complete house and turnkey construction cost per square foot, material quantities and an editable, itemized PDF report. Includes a full construction-cost guide, FAQ section with valid schema, and dedicated policy pages.
-Version: 1.11.0
+Version: 1.12.0
 Requires at least: 6.0
 Requires PHP: 7.4
 Tested up to: 7.1
@@ -421,3 +421,28 @@ details.faq .accordion-body p{margin:0; color:var(--ink)}
 .lc-rates summary{cursor:pointer; font-weight:600; margin-bottom:8px}
 .area-converter output{display:block; margin-top:10px; line-height:1.6}
 .size-answer{margin-bottom:8px}
+
+/* ==========================================================================
+   v1.12.0 — design pass: calculator first, compact form, no box-in-box
+   ========================================================================== */
+.more-label{font-size:13px; font-weight:700; color:var(--ink); margin:16px 0 0}
+details.more-options .rooms-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+details.more-options .radio-grid{margin-top:8px}
+.radio-card{padding-right:30px}
+@media (max-width:520px){
+  .radio-grid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
+  .radio-card{padding:9px 28px 9px 10px}
+  .radio-card span{font-size:11.5px; line-height:1.35}
+}
+.illo img{max-width:min(100%,560px)}
+/* calculator / notes inside a page card: no second card */
+.static-page .card .calc-card{box-shadow:none; border:1.5px solid var(--line); margin:18px 0 22px}
+.static-page .card .static-page{margin:0 0 16px; padding:0; max-width:none}
+.static-page .card .static-page > .card{box-shadow:none; padding:0; background:none; border-radius:0}
+@media (max-width:600px){
+  .static-page{padding:0 8px; margin-top:12px}
+  .static-page .card{padding:20px 14px}
+  .static-page .card .calc-card{margin-left:-14px; margin-right:-14px; border-radius:0; border-left:0; border-right:0; padding:18px 14px 22px}
+  .table-scroll .mini-table{min-width:0}
+}
+@media (max-width:420px){ .mini-table{font-size:12.5px} .mini-table th,.mini-table td{padding:6px} }

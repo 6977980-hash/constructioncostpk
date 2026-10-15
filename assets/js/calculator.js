@@ -489,7 +489,7 @@
   var GREY_KEYS = ["cement", "steel", "bricks", "sandCrush", "structureLabour", "basement"];
   var FINISH_KEYS = ["tiles", "plumbing", "electrical", "paint", "woodwork", "miscFinish", "finishLabour", "roomExtras"];
 
-  function renderResults(result, inputs) {
+  function renderResults(result, inputs, noScroll) {
     summaryGrid.innerHTML = "";
     var tiles = [
       { lab: "Total Estimated Cost", val: formatPKR(result.grandTotal), sub: toLacCroreLabel(result.grandTotal), total: true },
@@ -551,7 +551,7 @@
     }
 
     resultsSection.hidden = false;
-    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!noScroll) resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function labelForType(t) {
@@ -583,6 +583,26 @@
     track("calculate", { construction_type: inputs.constructionType, quality: inputs.quality, city: inputs.city, covered_area: Math.round(inputs.coveredArea || 0), value: Math.round(result.grandTotal) });
   });
 
+  // v1.12.0: once a result is on screen, it follows every input change
+  // (no scrolling, no extra click). An invalid value shows the error instead.
+  var liveTimer = null;
+  function liveUpdate() {
+    if (!lastResult) return;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(function () {
+      var inputs = readInputs();
+      var err = validateInputs(inputs);
+      if (err) { formError.textContent = err; formError.hidden = false; return; }
+      formError.hidden = true;
+      var result = computeEstimate(inputs);
+      lastResult = result; lastInputs = inputs;
+      renderResults(result, inputs, true);
+      updateShare(result, inputs);
+    }, 250);
+  }
+  form.addEventListener("input", liveUpdate);
+  form.addEventListener("change", liveUpdate);
+
   if ($("reset-btn")) {
     $("reset-btn").addEventListener("click", function () {
       form.reset();
@@ -592,6 +612,7 @@
       if (basementAreaWrap) basementAreaWrap.hidden = true;
       if (wallLengthWrap) wallLengthWrap.hidden = true;
       resultsSection.hidden = true;
+      lastResult = null; lastInputs = null;
       formError.hidden = true;
       updatePlotHintAndSuggestion();
       window.scrollTo({ top: 0, behavior: "smooth" });

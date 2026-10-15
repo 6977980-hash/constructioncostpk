@@ -29,7 +29,7 @@ $hcc_fl = function ( $slug, $label ) { if ( hcc_page_exists( $slug ) ) echo '<li
 				<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#icon-crane"></use></svg>
 				<strong>ConstructionCostPK</strong>
 			</div>
-			<p>ConstructionCostPK is a free, independent house construction cost calculator and building cost estimator for Pakistan — covering grey structure, complete house and turnkey construction cost per sq ft for 5 Marla, 7 Marla, 10 Marla, 1 Kanal and custom plots.</p>
+			<p>ConstructionCostPK is a free, independent house construction cost calculator and building cost estimator for Pakistan — covering grey structure, complete house and turnkey construction cost per sq ft for any plot from 3 Marla to 2 Kanal.</p>
 			<p>All calculations run in your browser using editable, typical 2026 Pakistani market rate assumptions. Nothing you enter is sent to a server unless you choose to send optional feedback.</p>
 		</div>
 		<div>
@@ -46,18 +46,14 @@ $hcc_fl = function ( $slug, $label ) { if ( hcc_page_exists( $slug ) ) echo '<li
 		<div>
 			<h3><?php if ( $hcc_guides ) : ?><a href="<?php echo esc_url( get_permalink( $hcc_guides ) ); ?>">Cost Guides</a><?php else : ?>Cost Guides<?php endif; ?></h3>
 			<ul>
-				<?php $hcc_fl( '3-marla-house-construction-cost', '3 Marla House Cost' ); $hcc_fl( '4-marla-house-construction-cost', '4 Marla House Cost' ); ?>
-				<?php if ( $hcc_5marla ) : ?><li><a href="<?php echo esc_url( get_permalink( $hcc_5marla ) ); ?>">5 Marla House Cost</a></li><?php endif; ?>
-				<?php if ( $hcc_7marla ) : ?><li><a href="<?php echo esc_url( get_permalink( $hcc_7marla ) ); ?>">7 Marla House Cost</a></li><?php endif; ?>
-				<?php if ( $hcc_10marla ) : ?><li><a href="<?php echo esc_url( get_permalink( $hcc_10marla ) ); ?>">10 Marla House Cost</a></li><?php endif; ?>
-				<?php if ( $hcc_1kanal ) : ?><li><a href="<?php echo esc_url( get_permalink( $hcc_1kanal ) ); ?>">1 Kanal House Cost</a></li><?php endif; ?>
-				<?php if ( $hcc_marla_std ) : ?><li><a href="<?php echo esc_url( get_permalink( $hcc_marla_std ) ); ?>">Marla &amp; Kanal Standards</a></li><?php endif; ?>
+				<?php foreach ( hcc_plot_sizes() as $hcc_k => $hcc_s ) $hcc_fl( $hcc_k . '-house-construction-cost', $hcc_s[0] . ' House Cost' ); ?>
+				<?php $hcc_fl( 'double-storey-house-construction-cost', 'Double Storey House Cost' ); $hcc_fl( 'marla-kanal-standards-pakistan', 'Marla & Kanal Standards' ); ?>
 			</ul>
 		</div>
 		<div>
 			<h3>Cities &amp; Materials</h3>
 			<ul>
-				<?php $hcc_fl( 'construction-cost-by-city', 'Cost by City' ); $hcc_fl( 'construction-cost-lahore', 'Lahore' ); $hcc_fl( 'construction-cost-karachi', 'Karachi' ); $hcc_fl( 'construction-cost-islamabad', 'Islamabad' ); $hcc_fl( 'construction-material-rates', 'Material Rates' ); $hcc_fl( 'pakistan-construction-cost-index', 'Cost Index' ); ?>
+				<?php $hcc_fl( 'construction-cost-by-city', 'Cost by City' ); $hcc_fl( 'construction-cost-lahore', 'Lahore' ); $hcc_fl( 'construction-cost-karachi', 'Karachi' ); $hcc_fl( 'construction-cost-islamabad', 'Islamabad' ); $hcc_fl( '120-sq-yard-house-construction-cost-karachi', 'Karachi 120 Sq Yd' ); $hcc_fl( 'construction-material-rates', 'Material Rates' ); $hcc_fl( 'lanter-roof-slab-cost-pakistan', 'Lanter (Roof Slab) Cost' ); $hcc_fl( 'pakistan-construction-cost-index', 'Cost Index' ); ?>
 			</ul>
 			<h3 style="margin-top:18px">Policies</h3>
 			<ul>

@@ -92,7 +92,7 @@ function hcc_plot_page_figs( $plot_sqft, $storeys ) {
 	$g = hcc_estimate( $plot_sqft, $storeys, 'grey' );
 	$e = hcc_estimate( $plot_sqft, $storeys, 'complete', 'economy' );
 	$p = hcc_estimate( $plot_sqft, $storeys, 'complete', 'premium' );
-	return array(
+	$out = array(
 		'covered' => number_format( $c['covered'] ),
 		'coverage' => round( hcc_coverage_ratio( $plot_sqft ) * 100 ),
 		'c' => hcc_format_pkr( $c['grandTotal'] ), 'c_psf' => hcc_format_pkr( $c['costPerSqft'] ), 'c_lakh' => hcc_lakh_crore( $c['grandTotal'] ),
@@ -103,6 +103,9 @@ function hcc_plot_page_figs( $plot_sqft, $storeys ) {
 		'q_bricks' => number_format( round( $g['qty']['bricks'] ) ), 'q_sand' => number_format( round( $g['qty']['sandCft'] ) ),
 		'q_crush' => number_format( round( $g['qty']['crushCft'] ) ),
 	);
+	// Page HTML only: a no-break space keeps "PKR" with its number on phones.
+	foreach ( array( 'c', 'c_psf', 'g', 'g_psf', 'e', 'e_psf', 'p', 'p_psf' ) as $k ) $out[ $k ] = str_replace( 'PKR ', 'PKR&nbsp;', $out[ $k ] );
+	return $out;
 }
 function hcc_city_labels() {
 	return array(

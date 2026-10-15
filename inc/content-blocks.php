@@ -21,7 +21,8 @@ function hcc_table( $head, $rows, $class = 'mini-table' ) {
 	}
 	return $h . '</tbody></table></div>';
 }
-function hcc_pkr( $n ) { return esc_html( hcc_format_pkr( $n ) ); }
+/** Table cell amount; a no-break space keeps "PKR" with its number on phones. */
+function hcc_pkr( $n ) { return str_replace( 'PKR ', 'PKR&nbsp;', esc_html( hcc_format_pkr( $n ) ) ); }
 
 /* --------------------------------------------------------------------------
  * O3.4 / G4 — current material rates table with date + source per rate.

@@ -493,6 +493,8 @@ function house_cost_calculator_shortcode( $atts ) {
 	// One quick-answer box per page: guide pages that open with their own
 	// "Quick answer" paragraph don't get a second one with other numbers.
 	$hcc_show_qa = 'yes' === $atts['qa'] || ( 'auto' === $atts['qa'] && ! hcc_variant_has_own_quick_answer( $atts['variant'] ) );
+	// v1.12.0: the front page already opens with its own quick-answer box.
+	if ( 'full' === $atts['mode'] && function_exists( 'is_front_page' ) && is_front_page() && 'yes' !== $atts['qa'] ) $hcc_show_qa = false;
 
 	// SEO AUDIT FIX: pre-calculate the default (Lahore, standard quality,
 	// 1,000 sq ft) quick-answer figures server-side so they are present in
@@ -525,7 +527,7 @@ function house_cost_calculator_shortcode( $atts ) {
 
 	<section class="calc-card" id="calculator" aria-labelledby="calc-heading">
 		<h2 id="calc-heading" style="margin-top:0; font-size:20px;">Construction Cost Calculator</h2>
-		<p style="color:var(--ink-soft); font-size:14px; margin-top:-6px;">Fill in your plot and building details below to get a free, instant building cost estimator result for Pakistan. All prices are shown in Pakistani Rupees (PKR) and every rate assumption can be customized to match your local market — no sign-up required.</p>
+		<p style="color:var(--ink-soft); font-size:14px; margin-top:-6px;">Enter your plot and choose the finish. All prices are in PKR, and every rate can be changed to match your local market.</p>
 
 		<form id="calc-form" novalidate<?php echo $atts['default_type'] ? ' data-default-type="' . esc_attr( $atts['default_type'] ) . '"' : ''; ?>>
 
@@ -601,55 +603,6 @@ function house_cost_calculator_shortcode( $atts ) {
 							<option value="4"<?php selected( $hcc_preset[2], 4 ); ?>>Ground + 3</option>
 						</select>
 					</div>
-					<div class="field">
-						<label for="bedrooms">Bedrooms</label>
-						<input type="number" id="bedrooms" name="bedrooms" min="0" max="12" step="1" value="3">
-					</div>
-					<div class="field">
-						<label for="bathrooms">Bathrooms</label>
-						<input type="number" id="bathrooms" name="bathrooms" min="0" max="12" step="1" value="3">
-					</div>
-					<div class="field">
-						<label for="kitchens">Kitchens</label>
-						<input type="number" id="kitchens" name="kitchens" min="0" max="4" step="1" value="1">
-					</div>
-					<div class="field">
-						<label>&nbsp;</label>
-						<div class="checkbox-row">
-							<input type="checkbox" id="has-basement" name="has-basement">
-							<label for="has-basement" style="font-weight:500">Include Basement</label>
-						</div>
-					</div>
-				</div>
-				<div class="grid" id="basement-area-wrap" hidden style="margin-top:14px">
-					<div class="field">
-						<label for="basement-area">Basement Area (sq ft)</label>
-						<input type="number" id="basement-area" name="basement-area" min="0" step="10" value="0">
-						<span class="hint">Basement construction typically costs about 45% more per sq ft (excavation, shoring, waterproofing, DPC).</span>
-					</div>
-				</div>
-				<div class="grid" style="margin-top:14px">
-					<div class="field">
-						<div class="checkbox-row">
-							<input type="checkbox" id="has-boundary-wall" name="has-boundary-wall">
-							<label for="has-boundary-wall" style="font-weight:500">Include Boundary Wall</label>
-						</div>
-						<span class="hint">A cost head many simple calculators leave out entirely.</span>
-					</div>
-					<div class="field">
-						<div class="checkbox-row">
-							<input type="checkbox" id="has-approval-fee" name="has-approval-fee">
-							<label for="has-approval-fee" style="font-weight:500">Include Approval / NOC Fee Allowance</label>
-						</div>
-						<span class="hint">Editable estimate for map/building approval fees.</span>
-					</div>
-				</div>
-				<div class="grid" id="wall-length-wrap" hidden style="margin-top:14px">
-					<div class="field">
-						<label for="wall-length">Boundary Wall Length (running ft)</label>
-						<input type="number" id="wall-length" name="wall-length" min="0" step="5" value="<?php echo esc_attr( round( 4.4 * sqrt( $hcc_plot_sqft ) ) ); ?>">
-						<span class="hint">Auto-suggested from plot perimeter — edit if you have an exact boundary survey.</span>
-					</div>
 				</div>
 			</fieldset>
 
@@ -701,7 +654,63 @@ function house_cost_calculator_shortcode( $atts ) {
 			</fieldset>
 
 			<fieldset>
-				<legend>Design Complexity</legend>
+				<legend>More Options</legend>
+				<details class="advanced more-options" id="more-options">
+					<summary>Rooms, basement, boundary wall, approval fee &amp; design (optional)</summary>
+				<p class="more-label">Rooms</p>
+				<div class="grid rooms-grid">
+					<div class="field">
+						<label for="bedrooms">Bedrooms</label>
+						<input type="number" id="bedrooms" name="bedrooms" min="0" max="12" step="1" value="3">
+					</div>
+					<div class="field">
+						<label for="bathrooms">Bathrooms</label>
+						<input type="number" id="bathrooms" name="bathrooms" min="0" max="12" step="1" value="3">
+					</div>
+					<div class="field">
+						<label for="kitchens">Kitchens</label>
+						<input type="number" id="kitchens" name="kitchens" min="0" max="4" step="1" value="1">
+					</div>
+				</div>
+				<div class="grid" style="margin-top:14px">
+					<div class="field">
+						<div class="checkbox-row">
+							<input type="checkbox" id="has-basement" name="has-basement">
+							<label for="has-basement" style="font-weight:500">Include Basement</label>
+						</div>
+					</div>
+				</div>
+				<div class="grid" id="basement-area-wrap" hidden style="margin-top:14px">
+					<div class="field">
+						<label for="basement-area">Basement Area (sq ft)</label>
+						<input type="number" id="basement-area" name="basement-area" min="0" step="10" value="0">
+						<span class="hint">Basement construction typically costs about 45% more per sq ft (excavation, shoring, waterproofing, DPC).</span>
+					</div>
+				</div>
+				<div class="grid" style="margin-top:14px">
+					<div class="field">
+						<div class="checkbox-row">
+							<input type="checkbox" id="has-boundary-wall" name="has-boundary-wall">
+							<label for="has-boundary-wall" style="font-weight:500">Include Boundary Wall</label>
+						</div>
+						<span class="hint">A cost head many simple calculators leave out entirely.</span>
+					</div>
+					<div class="field">
+						<div class="checkbox-row">
+							<input type="checkbox" id="has-approval-fee" name="has-approval-fee">
+							<label for="has-approval-fee" style="font-weight:500">Include Approval / NOC Fee Allowance</label>
+						</div>
+						<span class="hint">Editable estimate for map/building approval fees.</span>
+					</div>
+				</div>
+				<div class="grid" id="wall-length-wrap" hidden style="margin-top:14px">
+					<div class="field">
+						<label for="wall-length">Boundary Wall Length (running ft)</label>
+						<input type="number" id="wall-length" name="wall-length" min="0" step="5" value="<?php echo esc_attr( round( 4.4 * sqrt( $hcc_plot_sqft ) ) ); ?>">
+						<span class="hint">Auto-suggested from plot perimeter — edit if you have an exact boundary survey.</span>
+					</div>
+				</div>
+				<p class="more-label">Design complexity</p>
 				<div class="radio-grid" role="radiogroup" aria-label="Design complexity">
 					<label class="radio-card">
 						<input type="radio" name="design-complexity" value="efficient">
@@ -719,6 +728,7 @@ function house_cost_calculator_shortcode( $atts ) {
 						<span>Curves, large cantilevers, double-height spaces.</span>
 					</label>
 				</div>
+				</details>
 			</fieldset>
 
 			<fieldset>

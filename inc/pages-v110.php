@@ -182,13 +182,13 @@ function hcc_v110_page_definitions() {
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 6 Marla plot is 1,350 sq ft. Built single storey with about {$e6['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e6['total']}</strong> and the grey structure alone about <strong>{$e6g['total']}</strong>. A double storey 6 Marla house, about {$e6d['covered']} sq ft, costs roughly <strong>{$e6d['total']}</strong>.</p>
 
-<figure class="illo"><img src="{$img}hero-6-marla.png?ver={$hcc_ver}" alt="Infographic of a 6 Marla plot (1,350 sq ft) in Pakistan with an estimated {$e6['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>6 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
+[house_cost_calculator mode="calculator_only" variant="6-marla" default_type="complete" faq="no"]
+
+<figure class="illo"><img src="{$img}hero-6-marla.png?ver={$hcc_ver}" alt="Infographic of a 6 Marla plot (1,350 sq ft) in Pakistan with an estimated {$e6['covered']} sq ft single storey covered area" width="1200" height="630" loading="lazy"><figcaption>6 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 6 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="6" storeys="1"]
-<p class="hint">Single storey, {$e6['covered']} sq ft covered area, Lahore, typical design. Use the calculator below for your own city and finishing level.</p>
-
-[house_cost_calculator mode="calculator_only" variant="6-marla" default_type="complete" faq="no"]
+<p class="hint">Single storey, {$e6['covered']} sq ft covered area, Lahore, typical design. Use the calculator above for your own city and finishing level.</p>
 
 <h2>How big is a 6 Marla plot?</h2>
 [hcc_size_box marla="6"]
@@ -220,13 +220,13 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> an 8 Marla plot is 1,800 sq ft. Most 8 Marla houses are double storey: about {$e8['covered']} sq ft of covered area costs about <strong>{$e8['total']}</strong> complete (standard quality, Lahore rates), or <strong>{$e8g['total']}</strong> for the grey structure. Built single storey (about {$e8s['covered']} sq ft) it costs about {$e8s['total']}.</p>
 
-<figure class="illo"><img src="{$img}hero-8-marla.png?ver={$hcc_ver}" alt="Infographic of an 8 Marla plot (1,800 sq ft) in Pakistan with an estimated {$e8['covered']} sq ft double storey covered area" width="1200" height="630" loading="eager"><figcaption>8 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
+[house_cost_calculator mode="calculator_only" variant="8-marla" default_type="complete" faq="no"]
+
+<figure class="illo"><img src="{$img}hero-8-marla.png?ver={$hcc_ver}" alt="Infographic of an 8 Marla plot (1,800 sq ft) in Pakistan with an estimated {$e8['covered']} sq ft double storey covered area" width="1200" height="630" loading="lazy"><figcaption>8 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does an 8 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="8" storeys="2"]
-<p class="hint">Double storey, {$e8['covered']} sq ft covered area, Lahore, typical design. Use the calculator below for your own city and finishing level.</p>
-
-[house_cost_calculator mode="calculator_only" variant="8-marla" default_type="complete" faq="no"]
+<p class="hint">Double storey, {$e8['covered']} sq ft covered area, Lahore, typical design. Use the calculator above for your own city and finishing level.</p>
 
 <h2>How big is an 8 Marla plot?</h2>
 [hcc_size_box marla="8"]
@@ -258,13 +258,13 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 2 Kanal plot is 9,000 sq ft (40 Marla). A double storey 2 Kanal house with about {$e2k['covered']} sq ft of covered area costs about <strong>{$e2k['total']}</strong> complete (standard quality, Lahore rates), or <strong>{$e2kg['total']}</strong> for the grey structure. Premium finishing, a basement or a pool raise this a lot, so use the calculator below for your own design.</p>
 
-<figure class="illo"><img src="{$img}hero-2-kanal.png?ver={$hcc_ver}" alt="Infographic of a 2 Kanal plot (9,000 sq ft) in Pakistan with an estimated {$e2k['covered']} sq ft double storey covered area" width="1200" height="630" loading="eager"><figcaption>2 Kanal plot size, covered area and storeys at a glance.</figcaption></figure>
+[house_cost_calculator mode="calculator_only" variant="2-kanal" default_type="complete" faq="no"]
+
+<figure class="illo"><img src="{$img}hero-2-kanal.png?ver={$hcc_ver}" alt="Infographic of a 2 Kanal plot (9,000 sq ft) in Pakistan with an estimated {$e2k['covered']} sq ft double storey covered area" width="1200" height="630" loading="lazy"><figcaption>2 Kanal plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 2 Kanal house cost in {$y}?</h2>
 [hcc_plot_tables marla="40" storeys="2"]
 <p class="hint">Double storey, {$e2k['covered']} sq ft covered area, Lahore, typical design. Large houses are rarely "typical", so set design complexity and quality in the calculator.</p>
-
-[house_cost_calculator mode="calculator_only" variant="2-kanal" default_type="complete" faq="no"]
 
 <h2>How big is a 2 Kanal plot?</h2>
 [hcc_size_box marla="40"]

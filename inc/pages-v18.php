@@ -50,13 +50,13 @@ function hcc_v18_page_definitions() {
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 3 Marla plot is 675 sq ft. Built single storey with about {$e3['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e3['total_fmt']}</strong> and the grey structure alone about <strong>{$e3g['total_fmt']}</strong>. Most 3 Marla owners build double storey to fit 3 bedrooms: about {$e3d['covered']} sq ft for roughly <strong>{$e3d['total_fmt']}</strong>.</p>
 
-<figure class="illo"><img src="{$img}hero-3-marla.png?ver={$hcc_ver}" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated {$e3['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>3 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
+[house_cost_calculator mode="calculator_only" variant="3-marla" default_type="complete" faq="no"]
+
+<figure class="illo"><img src="{$img}hero-3-marla.png?ver={$hcc_ver}" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated {$e3['covered']} sq ft single storey covered area" width="1200" height="630" loading="lazy"><figcaption>3 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 3 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="3" storeys="1"]
-<p class="hint">Single storey, {$e3['covered']} sq ft covered area, Lahore, typical design. Use the calculator below for your own city and finishing level.</p>
-
-[house_cost_calculator mode="calculator_only" variant="3-marla" default_type="complete" faq="no"]
+<p class="hint">Single storey, {$e3['covered']} sq ft covered area, Lahore, typical design. Use the calculator above for your own city and finishing level.</p>
 
 <h2>How big is a 3 Marla plot?</h2>
 [hcc_size_box marla="3"]
@@ -96,13 +96,13 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 4 Marla plot is 900 sq ft. Built single storey with about {$e4['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e4['total_fmt']}</strong>, and grey structure only about <strong>{$e4g['total_fmt']}</strong>. A double storey 4 Marla house costs about {$e4d['total_fmt']}.</p>
 
-<figure class="illo"><img src="{$img}hero-4-marla.png?ver={$hcc_ver}" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated {$e4['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>4 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
+[house_cost_calculator mode="calculator_only" variant="4-marla" default_type="complete" faq="no"]
+
+<figure class="illo"><img src="{$img}hero-4-marla.png?ver={$hcc_ver}" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated {$e4['covered']} sq ft single storey covered area" width="1200" height="630" loading="lazy"><figcaption>4 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 4 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="4" storeys="1"]
 <p class="hint">Single storey, {$e4['covered']} sq ft covered area, Lahore, typical design.</p>
-
-[house_cost_calculator mode="calculator_only" variant="4-marla" default_type="complete" faq="no"]
 
 <h2>4 Marla size and dimensions</h2>
 [hcc_size_box marla="4"]
@@ -135,14 +135,14 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> building a house in Lahore costs about <strong>{$cityrate('lahore')} per sq ft</strong> for a standard-quality complete house and about <strong>{$cityrate('lahore','grey')} per sq ft</strong> for grey structure in {$y}. A single storey 5 Marla house comes to roughly {$e3['lahore5_fmt']}; a double storey 1 Kanal house to about {$e3['lahore1k_fmt']}.</p>
 
+[house_cost_calculator mode="calculator_only" variant="city-lahore" city="lahore" default_type="complete" faq="no"]
+
 <h2>Lahore construction rates per sq ft</h2>
 [hcc_city_rates city="lahore"]
 
 <h2>What do common Lahore plot sizes cost?</h2>
 <p>Lahore plots are sold in Marla and Kanal. Most private schemes (DHA, Bahria Town, LDA Avenue and similar) use the 225 sq ft "society Marla", while older revenue records and some peripheral areas use 272.25 sq ft — confirm which one your plot uses on our <a href="{$u('marla-kanal-standards-pakistan')}">Marla standards guide</a>.</p>
 [hcc_city_plots city="lahore"]
-
-[house_cost_calculator mode="calculator_only" variant="city-lahore" city="lahore" default_type="complete" faq="no"]
 
 <h2>Who approves building plans in Lahore?</h2>
 <p>Inside areas controlled by the <strong>Lahore Development Authority (LDA)</strong>, building plans are approved by LDA under its building and zoning regulations. Large private schemes such as <strong>DHA Lahore</strong> and <strong>Bahria Town Lahore</strong> run their own building control departments with their own map fees, coverage limits and completion certificates. Areas under the Metropolitan Corporation or cantonment boards follow those bodies' rules. Because fee schedules are revised regularly, get the current schedule from your scheme office before budgeting — the calculator's approval-fee field is editable for exactly this reason.</p>
@@ -166,6 +166,8 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> in Karachi, a standard-quality complete house costs about <strong>{$cityrate('karachi')} per sq ft</strong> and grey structure about <strong>{$cityrate('karachi','grey')} per sq ft</strong> in {$y}. A double storey house on a 120 sq yd plot comes to roughly {$e3['k120_fmt']}.</p>
 
+[house_cost_calculator mode="calculator_only" variant="city-karachi" city="karachi" default_type="complete" faq="no"]
+
 <h2>Karachi construction rates per sq ft</h2>
 [hcc_city_rates city="karachi"]
 
@@ -176,8 +178,6 @@ HTML
 <h2>Karachi house construction cost per square yard plot</h2>
 <p>The table below covers the common Karachi plot sizes from 80 to 1,000 sq yd, built as ground floor only or ground + 1, at standard quality with Karachi rates. Use the calculator for ground + 2, a basement or a different finishing level.</p>
 [hcc_sqyd_table city="karachi"]
-
-[house_cost_calculator mode="calculator_only" variant="city-karachi" city="karachi" default_type="complete" faq="no"]
 
 <h2>Who approves building plans in Karachi?</h2>
 <p>Most of Karachi falls under the <strong>Sindh Building Control Authority (SBCA)</strong>, which approves plans under the Karachi Building &amp; Town Planning Regulations. <strong>Cantonment areas</strong> — including DHA Karachi, which falls under Clifton Cantonment Board — have their own approval process, and schemes developed by KDA or private developers (such as Bahria Town Karachi) have additional rules on coverage and elevations. Confirm current fees with the relevant office; enter them in the calculator's approval-fee field.</p>
@@ -201,14 +201,14 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> Islamabad is the most expensive major city to build in: about <strong>{$cityrate('islamabad')} per sq ft</strong> for a standard complete house and <strong>{$cityrate('islamabad','grey')} per sq ft</strong> for grey structure in {$y}. A double storey house on a 30×60 ft (8 Marla) plot costs roughly {$e3['i3060_fmt']}.</p>
 
+[house_cost_calculator mode="calculator_only" variant="city-islamabad" city="islamabad" default_type="complete" faq="no"]
+
 <h2>Islamabad construction rates per sq ft</h2>
 [hcc_city_rates city="islamabad"]
 
 <h2>What do Islamabad plot sizes cost to build?</h2>
 <p>CDA sectors are planned around plot dimensions rather than Marla: 25×50 ft (about 5.5 Marla), 30×60 ft (8 Marla), 35×70 ft (about 11 Marla), 40×80 ft (about 14 Marla) and 50×90 ft (1 Kanal). Most are built double storey.</p>
 [hcc_city_plots city="islamabad"]
-
-[house_cost_calculator mode="calculator_only" variant="city-islamabad" city="islamabad" default_type="complete" faq="no"]
 
 <h2>Rawalpindi, DHA and Bahria Town</h2>
 <p>Many "Islamabad" plots are actually in Rawalpindi district or in private societies along GT Road and the Islamabad Expressway, such as DHA Islamabad and Bahria Town. Labour in Rawalpindi is a little cheaper than in the CDA sectors, so the calculator uses a lower city factor there:</p>
