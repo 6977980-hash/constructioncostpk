@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" role="img" aria-labelledby="matLabTitle">
+<title id="matLabTitle">Material cost versus labour cost split for grey structure and finishing work</title>
+<g transform="translate(80,75)">
+  <circle r="55" fill="none" stroke="#eaf1ff" stroke-width="22"/>
+  <circle r="55" fill="none" stroke="#1558d6" stroke-width="22" stroke-dasharray="226 350" transform="rotate(-90)"/>
+  <text y="6" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="800" fill="#122c4a">65/35</text>
+</g>
+<text x="80" y="145" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#556070" font-weight="700">Grey Structure</text>
+<g transform="translate(300,75)">
+  <circle r="55" fill="none" stroke="#fbf0dd" stroke-width="22"/>
+  <circle r="55" fill="none" stroke="#b9720f" stroke-width="22" stroke-dasharray="190 350" transform="rotate(-90)"/>
+  <text y="6" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="800" fill="#122c4a">55/45</text>
+</g>
+<text x="300" y="145" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#556070" font-weight="700">Finishing</text>
+</svg>
