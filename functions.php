@@ -4,7 +4,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HCC_VERSION', '1.9.0' );
+define( 'HCC_VERSION', '1.10.0' );
 
 require get_template_directory() . '/inc/shortcode-calculator.php';
 // v1.8.0 SEO-audit implementation (see docs in the delivery package).
@@ -125,6 +125,11 @@ function hcc_page_definitions() {
 	$p7  = hcc_plot_page_figs( 1575, 1 );
 	$p10 = hcc_plot_page_figs( 2250, 2 );
 	$p1k = hcc_plot_page_figs( 4500, 2 );
+	// v1.10: the other storey option, so every size page leads with both totals.
+	$p5d  = hcc_plot_page_figs( 1125, 2 );
+	$p7d  = hcc_plot_page_figs( 1575, 2 );
+	$p10s = hcc_plot_page_figs( 2250, 1 );
+	$p1ks = hcc_plot_page_figs( 4500, 1 );
 	$grey_band = hcc_price_bands()['grey'];
 	$grey_band_txt = 'PKR ' . number_format( $grey_band[0] ) . ' to PKR ' . number_format( $grey_band[1] );
 	$finish_share = 100 - hcc_cost_shares()['grey_of_complete'];
@@ -138,14 +143,16 @@ function hcc_page_definitions() {
 	$hcc_img_base  = get_template_directory_uri() . '/assets/img/';
 
 	$hcc_5marla_content = <<<HTML
-<p><strong>Quick answer:</strong> a 5 Marla plot is 1,125 sq ft. Built as a single storey home with roughly {$p5['covered']} sq ft of covered area, a <strong>complete house</strong> (structure + finishing, standard quality, Lahore rates) costs approximately <strong>{$p5['c']}</strong> — about {$p5['c_psf']} per sq ft. <strong>Grey structure only</strong> costs approximately <strong>{$p5['g']}</strong>, about {$p5['g_psf']} per sq ft. These figures come from the same calculator engine used below, so you can recalculate them instantly for your own city, quality level and design.</p>
+<p><strong>Quick answer:</strong> a 5 Marla plot is 1,125 sq ft. A <strong>single storey</strong> complete house (about {$p5['covered']} sq ft covered, standard quality, Lahore rates) costs about <strong>{$p5['c']}</strong>, and a <strong>double storey</strong> house (about {$p5d['covered']} sq ft) costs about <strong>{$p5d['c']}</strong>. Grey structure only comes to about {$p5['g']} single storey or {$p5d['g']} double storey. Most owners on this size build single storey. These figures come from the same calculator engine used below, so you can recalculate them for your own city, quality level and design.</p>
+[hcc_plot_tables marla="5" part="storeys"]
 
 <figure class="illo">
 <img src="{$hcc_img_base}hero-5-marla.png?ver={$hcc_ver}" alt="Infographic showing a 5 Marla plot (1,125 sq ft) in Pakistan with an estimated {$p5['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager">
-<figcaption>5 Marla plot size, covered area and estimated complete-house construction cost at a glance.</figcaption>
+<figcaption>5 Marla plot size, covered area and storeys at a glance.</figcaption>
 </figure>
 
 <h2>How Big Is a 5 Marla Plot?</h2>
+[hcc_size_box marla="5"]
 <p>In Pakistan, 1 Marla equals 225 sq ft, so a 5 Marla plot works out to 1,125 sq ft of land. It is one of the most common plot sizes for a first home, especially in housing societies around Lahore, Karachi, Faisalabad and Islamabad's satellite towns. Because the plot itself is compact, most 5 Marla houses are built as a single storey, though a growing number of owners choose a double storey design to fit more bedrooms onto the same piece of land.</p>
 <p>Local building bylaws typically allow roughly {$p5['coverage']}% ground coverage on a plot this size once front and side setbacks are accounted for, which is why this calculator suggests around {$p5['covered']} sq ft of covered area for a single storey 5 Marla house. If your own approved drawing shows a different figure, simply edit the "Covered Area" field in the calculator below — every other number recalculates instantly.</p>
 <p class="hint">Note: this guide uses 1 Marla = 225 sq ft ("Society Marla"), the most common standard across Pakistan today. Some plots use 250, 272 or 272.25 sq ft per Marla instead — if yours does, select it from the "Marla / Kanal Standard" dropdown in the calculator below (see our <a href="{$hcc_marla_url}">full guide to Pakistan's Marla &amp; Kanal standards</a> for a detailed comparison). Only the plot-size-to-sq-ft conversion changes; once your covered area is set correctly, every cost figure on this page still applies.</p>
@@ -190,14 +197,16 @@ function hcc_page_definitions() {
 HTML;
 
 	$hcc_7marla_content = <<<HTML
-<p><strong>Quick answer:</strong> a 7 Marla plot is 1,575 sq ft. Built as a single storey home with roughly {$p7['covered']} sq ft of covered area, a <strong>complete house</strong> (structure + finishing, standard quality, Lahore rates) costs approximately <strong>{$p7['c']}</strong> — about {$p7['c_psf']} per sq ft. <strong>Grey structure only</strong> costs approximately <strong>{$p7['g']}</strong>, about {$p7['g_psf']} per sq ft. These figures are produced by the same calculator engine used below, so you can recalculate them instantly for your own city, quality level and design.</p>
+<p><strong>Quick answer:</strong> a 7 Marla plot is 1,575 sq ft. A <strong>single storey</strong> complete house (about {$p7['covered']} sq ft covered, standard quality, Lahore rates) costs about <strong>{$p7['c']}</strong>, and a <strong>double storey</strong> house (about {$p7d['covered']} sq ft) costs about <strong>{$p7d['c']}</strong>. Grey structure only comes to about {$p7['g']} single storey or {$p7d['g']} double storey. Most owners on this size build single storey. These figures come from the same calculator engine used below, so you can recalculate them for your own city, quality level and design.</p>
+[hcc_plot_tables marla="7" part="storeys"]
 
 <figure class="illo">
 <img src="{$hcc_img_base}hero-7-marla.png?ver={$hcc_ver}" alt="Infographic showing a 7 Marla plot (1,575 sq ft) in Pakistan with an estimated {$p7['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager">
-<figcaption>7 Marla plot size, covered area and estimated complete-house construction cost at a glance.</figcaption>
+<figcaption>7 Marla plot size, covered area and storeys at a glance.</figcaption>
 </figure>
 
 <h2>How Big Is a 7 Marla Plot?</h2>
+[hcc_size_box marla="7"]
 <p>A 7 Marla plot works out to 1,575 sq ft of land (1 Marla = 225 sq ft) — a popular "step-up" size for families who want noticeably more room than a 5 Marla plot without moving all the way to a 10 Marla budget. Most 7 Marla houses in Pakistan are still built single storey, with a comfortable 3-bedroom layout, though a double storey option is common where more bedrooms or a home office/rental portion is needed.</p>
 <p>Applying typical building-bylaw coverage ratios for this plot size (around {$p7['coverage']}% ground coverage), this calculator suggests approximately {$p7['covered']} sq ft of covered area for a single storey 7 Marla house. As always, this is editable — enter your own approved drawing's covered area in the calculator below for an exact match.</p>
 <p class="hint">Note: this guide uses 1 Marla = 225 sq ft ("Society Marla"), the most common standard across Pakistan today. Some plots use 250, 272 or 272.25 sq ft per Marla instead — if yours does, select it from the "Marla / Kanal Standard" dropdown in the calculator below (see our <a href="{$hcc_marla_url}">full guide to Pakistan's Marla &amp; Kanal standards</a> for a detailed comparison). Only the plot-size-to-sq-ft conversion changes; once your covered area is set correctly, every cost figure on this page still applies.</p>
@@ -242,14 +251,16 @@ HTML;
 HTML;
 
 	$hcc_10marla_content = <<<HTML
-<p><strong>Quick answer:</strong> a 10 Marla plot is 2,250 sq ft. Built as a double storey home with roughly {$p10['covered']} sq ft of total covered area, a <strong>complete house</strong> (structure + finishing, standard quality, Lahore rates) costs approximately <strong>{$p10['c']}</strong> — about {$p10['c_psf']} per sq ft. <strong>Grey structure only</strong> costs approximately <strong>{$p10['g']}</strong>, about {$p10['g_psf']} per sq ft. These figures come from the same calculator engine used below, so you can recalculate them instantly for your own city, quality level and design.</p>
+<p><strong>Quick answer:</strong> a 10 Marla plot is 2,250 sq ft. A <strong>single storey</strong> complete house (about {$p10s['covered']} sq ft covered, standard quality, Lahore rates) costs about <strong>{$p10s['c']}</strong>, and a <strong>double storey</strong> house (about {$p10['covered']} sq ft) costs about <strong>{$p10['c']}</strong>. Grey structure only comes to about {$p10s['g']} single storey or {$p10['g']} double storey. Most owners on this size build double storey. These figures come from the same calculator engine used below, so you can recalculate them for your own city, quality level and design.</p>
+[hcc_plot_tables marla="10" part="storeys"]
 
 <figure class="illo">
 <img src="{$hcc_img_base}hero-10-marla.png?ver={$hcc_ver}" alt="Infographic showing a 10 Marla plot (2,250 sq ft) in Pakistan with an estimated {$p10['covered']} sq ft double storey covered area" width="1200" height="630" loading="eager">
-<figcaption>10 Marla plot size, covered area and estimated complete-house construction cost at a glance.</figcaption>
+<figcaption>10 Marla plot size, covered area and storeys at a glance.</figcaption>
 </figure>
 
 <h2>How Big Is a 10 Marla Plot?</h2>
+[hcc_size_box marla="10"]
 <p>A 10 Marla plot is 2,250 sq ft of land (1 Marla = 225 sq ft) — a popular size for established families who want a proper double storey home with multiple bedrooms, a separate drawing and dining area, and often a small lawn or driveway. Almost all 10 Marla houses in Pakistan are built double storey to make full use of the plot; a single storey build on this size plot is comparatively rare.</p>
 <p>Using typical building-bylaw coverage ratios for this plot size (around {$p10['coverage']}% ground coverage, doubled across two floors), this calculator suggests approximately {$p10['covered']} sq ft of total covered area for a double storey 10 Marla house. Edit the "Covered Area" and "Number of Storeys" fields below to match your own approved drawing exactly.</p>
 <p class="hint">Note: this guide uses 1 Marla = 225 sq ft ("Society Marla"), the most common standard across Pakistan today. Some plots use 250, 272 or 272.25 sq ft per Marla instead — if yours does, select it from the "Marla / Kanal Standard" dropdown in the calculator below (see our <a href="{$hcc_marla_url}">full guide to Pakistan's Marla &amp; Kanal standards</a> for a detailed comparison). Only the plot-size-to-sq-ft conversion changes; once your covered area is set correctly, every cost figure on this page still applies.</p>
@@ -294,14 +305,16 @@ HTML;
 HTML;
 
 	$hcc_1kanal_content = <<<HTML
-<p><strong>Quick answer:</strong> 1 Kanal is 4,500 sq ft of land. Built as a double storey home with roughly {$p1k['covered']} sq ft of total covered area, a <strong>complete house</strong> (structure + finishing, standard quality, Lahore rates) costs approximately <strong>{$p1k['c']}</strong> — about {$p1k['c_psf']} per sq ft. <strong>Grey structure only</strong> costs approximately <strong>{$p1k['g']}</strong>, about {$p1k['g_psf']} per sq ft. These figures come from the same calculator engine used below, so you can recalculate them instantly for your own city, quality level and design.</p>
+<p><strong>Quick answer:</strong> a 1 Kanal (20 Marla) plot is 4,500 sq ft. A <strong>single storey</strong> complete house (about {$p1ks['covered']} sq ft covered, standard quality, Lahore rates) costs about <strong>{$p1ks['c']}</strong>, and a <strong>double storey</strong> house (about {$p1k['covered']} sq ft) costs about <strong>{$p1k['c']}</strong>. Grey structure only comes to about {$p1ks['g']} single storey or {$p1k['g']} double storey. Most owners on this size build double storey. These figures come from the same calculator engine used below, so you can recalculate them for your own city, quality level and design.</p>
+[hcc_plot_tables marla="20" part="storeys"]
 
 <figure class="illo">
 <img src="{$hcc_img_base}hero-1-kanal.png?ver={$hcc_ver}" alt="Infographic showing a 1 Kanal plot (4,500 sq ft) in Pakistan with an estimated {$p1k['covered']} sq ft double storey covered area" width="1200" height="630" loading="eager">
-<figcaption>1 Kanal plot size, covered area and estimated complete-house construction cost at a glance.</figcaption>
+<figcaption>1 Kanal plot size, covered area and storeys at a glance.</figcaption>
 </figure>
 
 <h2>How Big Is a 1 Kanal Plot?</h2>
+[hcc_size_box marla="20"]
 <p>1 Kanal equals 20 Marla, or 4,500 sq ft of land (1 Marla = 225 sq ft) — the largest of the commonly built residential plot sizes in Pakistan, typical of premium housing societies and upscale suburbs in Lahore, Islamabad and Karachi. A 1 Kanal house is almost always built double storey (sometimes with a basement) to make full use of the plot for larger bedrooms, multiple lounges, a study, and often a servant portion and a proper driveway with landscaping.</p>
 <p>Using typical building-bylaw coverage ratios for a plot this size (around {$p1k['coverage']}% ground coverage, doubled across two floors), this calculator suggests approximately {$p1k['covered']} sq ft of total covered area for a double storey 1 Kanal house — noticeably less than a simple linear scale-up from smaller plots, because larger plots are required to keep proportionally more open lawn, driveway and setback area under most housing-society bylaws.</p>
 <p class="hint">Note: this guide uses 1 Kanal = 20 Marla = 4,500 sq ft, based on the most common "Society Marla" standard of 225 sq ft. Under the older Patwari / revenue-record standard (272.25 sq ft per Marla), 1 Kanal is actually 5,445 sq ft instead — a meaningful difference. If your plot's own record uses 250, 272 or 272.25 sq ft per Marla, select it from the "Marla / Kanal Standard" dropdown in the calculator below (see our <a href="{$hcc_marla_url}">full guide to Pakistan's Marla &amp; Kanal standards</a> for a detailed comparison). Only the plot-size-to-sq-ft conversion changes; once your covered area is set correctly, every cost figure on this page still applies.</p>
@@ -346,6 +359,13 @@ HTML;
 HTML;
 
 	$hcc_marla_standards_content = <<<HTML
+<p class="quick-answer-box"><strong>Quick answer:</strong> in most of Pakistan <strong>1 Marla = 225 sq ft</strong> (25 sq yd or gaz) and <strong>1 Kanal = 20 Marla = 4,500 sq ft</strong>. So 4 Marla = 900 sq ft, 5 Marla = 1,125 sq ft, 7 Marla = 1,575 sq ft (175 gaz), 10 Marla = 2,250 sq ft and 4 Kanal = 80 Marla (18,000 sq ft). Under the older 272.25 sq ft revenue Marla, 7 Marla is 1,905.75 sq ft and 1 Kanal is 5,445 sq ft.</p>
+
+[hcc_area_converter]
+
+<h2>Marla and Kanal conversion table</h2>
+[hcc_marla_conversions]
+
 <p>There is no single "sq ft per Marla" figure in Pakistan — <strong>four different standards are in everyday use</strong>: 225 sq ft (the most common, used by LDA, DHA, Bahria Town and most modern housing societies), 250 sq ft (Karachi and Cantonment Board areas), 272 sq ft (the Land Revenue Marla used in many local records) and 272.25 sq ft (the older Patwari / government revenue-record standard, still used in rural areas and older records, including much of Faisalabad). Because 1 Kanal always equals 20 Marla, the size of a Kanal shifts too — from 4,500 sq ft under the 225 sq ft standard up to 5,445 sq ft under the 272.25 sq ft standard.</p>
 
 <figure class="illo">

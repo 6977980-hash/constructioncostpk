@@ -346,7 +346,7 @@ function hcc_material_labour_svg() {
 
 /** Pages whose own content opens with a "Quick answer" box. */
 function hcc_variant_has_own_quick_answer( $variant ) {
-	return in_array( $variant, array( '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal' ), true ) || 0 === strpos( $variant, 'city-' );
+	return in_array( $variant, array( '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal', 'marla-standards' ), true ) || 0 === strpos( $variant, 'city-' );
 }
 
 /**
@@ -1056,28 +1056,35 @@ function hcc_render_faq() {
 }
 
 /**
- * SEO AUDIT FIX: five questions from the main FAQ pool that are directly
- * about grey structure (reused, not duplicated content authored twice) so
- * the Grey Structure Cost Calculator page — previously two short paragraphs
- * and nothing else — has real, relevant, already-vetted FAQ content and can
- * carry its own FAQPage schema that matches what is actually on the page.
+ * Grey Structure Cost Calculator FAQ. v1.10: its own questions (the page
+ * used to repeat five questions from the home page FAQ word for word).
  */
 function hcc_grey_structure_faq_items() {
-	$wanted = array(
-		'What is the difference between grey structure and complete house construction?',
-		'What is the grey structure cost per square foot in Lahore, Karachi and Islamabad right now?',
-		'How many cement bags are needed per square foot of construction?',
-		'How many bricks are needed per square foot of house construction in Pakistan?',
-		'How much steel (saria) is required for a house in Pakistan?',
+	$g = function ( $p, $st ) { return hcc_estimate( $p, $st, 'grey' ); };
+	$g5 = $g( 1125, 1 ); $g5d = $g( 1125, 2 ); $g10 = $g( 2250, 1 ); $g10d = $g( 2250, 2 ); $g3 = $g( 675, 1 ); $g7 = $g( 1575, 1 );
+	$pm = function ( $e, $marla ) { return hcc_format_pkr( round( $e['grandTotal'] / $marla, -3 ) ); };
+	return array(
+		array(
+			'q' => 'How much does the grey structure of a 5 Marla house cost?',
+			'a' => 'At standard quality and Lahore rates, the grey structure of a single storey 5 Marla house (about ' . number_format( $g5['covered'] ) . ' sq ft) costs about PKR ' . hcc_lakh_crore( $g5['grandTotal'] ) . ', and a double storey (about ' . number_format( $g5d['covered'] ) . ' sq ft) about PKR ' . hcc_lakh_crore( $g5d['grandTotal'] ) . ', materials and labour included. Finishing is extra.',
+		),
+		array(
+			'q' => 'How much does the grey structure of a 10 Marla house cost?',
+			'a' => 'A double storey 10 Marla house (about ' . number_format( $g10d['covered'] ) . ' sq ft) needs about PKR ' . hcc_lakh_crore( $g10d['grandTotal'] ) . ' for the grey structure at standard quality in Lahore; a single storey (about ' . number_format( $g10['covered'] ) . ' sq ft) about PKR ' . hcc_lakh_crore( $g10['grandTotal'] ) . '.',
+		),
+		array(
+			'q' => 'What is the grey structure cost per Marla?',
+			'a' => 'For a single storey house at standard quality in Lahore, grey structure works out to about ' . $pm( $g3, 3 ) . ' per Marla of plot on 3 Marla, ' . $pm( $g5, 5 ) . ' on 5 Marla and ' . $pm( $g7, 7 ) . ' on 7 Marla; a double storey roughly doubles it. Contractors quote "per Marla" in different ways, so always convert their quote to per sq ft of covered area before comparing.',
+		),
+		array(
+			'q' => 'Is plaster included in a grey structure quote?',
+			'a' => 'Not always. Many contractors treat plaster as part of finishing, while others include it in grey structure. Water-proofing, DPC, shuttering and conduit sleeves vary the same way. Ask for the scope in writing, because two quotes can differ by about 15% on scope alone.',
+		),
+		array(
+			'q' => 'How long does grey structure take to build?',
+			'a' => 'It depends on the size, the number of slabs, the weather and how steadily materials and payments arrive. Each roof slab needs about a week of curing before work above it continues, so a double storey takes noticeably longer than a single storey. Ask your contractor for a written schedule with a stage for each slab.',
+		),
 	);
-	$all = hcc_faq_items();
-	$out = array();
-	foreach ( $all as $item ) {
-		if ( in_array( $item['q'], $wanted, true ) ) {
-			$out[] = $item;
-		}
-	}
-	return $out;
 }
 
 function hcc_render_eeat() {

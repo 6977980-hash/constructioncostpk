@@ -78,12 +78,57 @@ function hcc_page_meta_line( $key ) {
 		. '<span><strong>By</strong> <a href="' . esc_url( $author_url ) . '">' . esc_html( hcc_author_name() ) . '</a></span></p>';
 }
 
+/**
+ * v1.10 — outbound references per page: the statistics office, the approving
+ * authorities and the manufacturers whose prices the planning rates follow.
+ */
+function hcc_reference_links( $key ) {
+	$l = array(
+		'pbs' => array( 'Pakistan Bureau of Statistics price statistics', 'https://www.pbs.gov.pk/price-statistics/' ),
+		'pec' => array( 'Pakistan Engineering Council (Building Code of Pakistan)', 'https://www.pec.org.pk/' ),
+		'lda' => array( 'Lahore Development Authority', 'https://lda.gop.pk/' ),
+		'dhal' => array( 'DHA Lahore', 'https://dhalahore.org/' ),
+		'bahria' => array( 'Bahria Town', 'https://bahriatown.com/' ),
+		'sbca' => array( 'Sindh Building Control Authority', 'https://sbca.gos.pk/' ),
+		'cda' => array( 'Capital Development Authority', 'https://www.cda.gov.pk/' ),
+		'rda' => array( 'Rawalpindi Development Authority', 'https://rda.gop.pk/' ),
+		'lucky' => array( 'Lucky Cement', 'https://lucky-cement.com/' ),
+		'dgk' => array( 'DG Khan Cement', 'https://www.dgcement.com/' ),
+		'maple' => array( 'Maple Leaf Cement', 'https://www.kmlg.com/' ),
+		'bestway' => array( 'Bestway Cement', 'https://bestway.com.pk/' ),
+		'amreli' => array( 'Amreli Steels', 'https://www.amrelisteels.com/' ),
+		'mughal' => array( 'Mughal Steel', 'https://mughalsteel.com.pk/' ),
+		'agha' => array( 'Agha Steel', 'https://aghasteel.com/' ),
+	);
+	$map = array(
+		'cement-rate-today-pakistan' => array( 'lucky', 'dgk', 'maple', 'bestway', 'pbs' ),
+		'steel-saria-rate-today' => array( 'amreli', 'mughal', 'agha', 'pbs' ),
+		'construction-material-rates' => array( 'pbs', 'lucky', 'dgk', 'amreli', 'mughal' ),
+		'pakistan-construction-cost-index' => array( 'pbs' ),
+		'construction-cost-lahore' => array( 'lda', 'dhal', 'bahria', 'pbs' ),
+		'construction-cost-karachi' => array( 'sbca', 'bahria', 'pbs' ),
+		'construction-cost-islamabad' => array( 'cda', 'rda', 'bahria', 'pbs' ),
+		'construction-cost-by-city' => array( 'lda', 'sbca', 'cda', 'pbs' ),
+		'methodology' => array( 'pbs', 'pec', 'lucky', 'amreli' ),
+		'grey-structure-cost-calculator' => array( 'pec', 'pbs', 'lucky', 'amreli' ),
+		'marla-kanal-standards-pakistan' => array( 'lda', 'cda', 'sbca' ),
+	);
+	$keys = isset( $map[ $key ] ) ? $map[ $key ] : ( preg_match( '/-(marla|kanal)-house-construction-cost$/', (string) $key ) || 'home' === $key ? array( 'pbs', 'pec', 'lda', 'cda' ) : array() );
+	return array_values( array_intersect_key( $l, array_flip( $keys ) ) );
+}
+
 function hcc_sources_box() {
 	$custom = hcc_opt( 'sources_note' );
 	$h = '<aside class="sources-box" aria-label="Sources and method"><h2>Sources &amp; how we calculate these estimates</h2><ul>';
 	$h .= '<li>Default material rates (cement, steel, bricks, sand, crush) were last updated on <strong>' . esc_html( hcc_rates_date_human() ) . '</strong>. ' . ( $custom ? wp_kses_post( $custom ) : 'They are planning rates set from Pakistani supplier and marketplace price lists; each one is editable in the calculator so you can use your own quotation.' ) . '</li>';
 	$h .= '<li>Material quantities use standard per-sq-ft thumb rules, adjusted for quality, design complexity, storeys and city — read <a href="' . esc_url( home_url( '/methodology/' ) ) . '">how we calculate these estimates</a>.</li>';
 	$h .= '<li>Estimates are for planning only — see our <a href="' . esc_url( home_url( '/disclaimer/' ) ) . '">disclaimer</a>.</li>';
+	$refs = hcc_reference_links( hcc_page_key() );
+	if ( $refs ) {
+		$links = array();
+		foreach ( $refs as $r ) $links[] = '<a href="' . esc_url( $r[1] ) . '" rel="noopener" target="_blank">' . esc_html( $r[0] ) . '</a>';
+		$h .= '<li>Official and industry sources: ' . implode( ', ', $links ) . '.</li>';
+	}
 	$h .= '</ul>';
 	if ( ! empty( $GLOBALS['hcc_cite'] ) ) {
 		$h .= '<p class="citable"><strong>Cite this page:</strong> ' . esc_html( $GLOBALS['hcc_cite'] ) . '</p>';
@@ -153,7 +198,7 @@ function hcc_about_additions() {
 	$name = hcc_author_name();
 	$li = hcc_opt( 'author_linkedin' );
 	$cred = hcc_opt( 'author_credentials' );
-	$h = '<h2>Who builds this calculator</h2><div class="author-box">' . ( $u ? get_avatar( $u->ID, 96, '', $name, array( 'class' => 'author-photo', 'loading' => 'lazy' ) ) : '' ) . '<div><p class="author-by"><strong>' . esc_html( $name ) . '</strong> — founder, ConstructionCostPK</p><p>' . esc_html( hcc_author_bio() ) . '</p>'
+	$h = '<h2 id="author">Who builds this calculator</h2><div class="author-box">' . ( $u ? get_avatar( $u->ID, 96, '', $name, array( 'class' => 'author-photo', 'loading' => 'lazy' ) ) : '' ) . '<div><p class="author-by"><strong>' . esc_html( $name ) . '</strong> — founder, ConstructionCostPK</p><p>' . esc_html( hcc_author_bio() ) . '</p>'
 		. ( $cred ? '<p>' . esc_html( $cred ) . '</p>' : '' )
 		. ( $li ? '<p><a href="' . esc_url( $li ) . '" rel="me noopener" target="_blank">' . esc_html( $name ) . ' on LinkedIn</a></p>' : '' ) . '</div></div>';
 	$h .= '<h2>Why this site exists</h2><p>Most construction cost figures online are either a single flat number or a lead form for a contractor. ConstructionCostPK shows every assumption behind its estimate, lets you replace any rate with your own quotation, and never asks for your phone number.</p>';

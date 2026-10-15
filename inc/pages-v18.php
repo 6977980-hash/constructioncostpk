@@ -50,13 +50,16 @@ function hcc_v18_page_definitions() {
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 3 Marla plot is 675 sq ft. Built single storey with about {$e3['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e3['total_fmt']}</strong> and the grey structure alone about <strong>{$e3g['total_fmt']}</strong>. Most 3 Marla owners build double storey to fit 3 bedrooms: about {$e3d['covered']} sq ft for roughly <strong>{$e3d['total_fmt']}</strong>.</p>
 
-<figure class="illo"><img src="{$img}hero-3-marla.png?ver={$hcc_ver}" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated {$e3['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>3 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
+<figure class="illo"><img src="{$img}hero-3-marla.png?ver={$hcc_ver}" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated {$e3['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>3 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 3 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="3" storeys="1"]
 <p class="hint">Single storey, {$e3['covered']} sq ft covered area, Lahore, typical design. Use the calculator below for your own city and finishing level.</p>
 
 [house_cost_calculator mode="calculator_only" variant="3-marla" default_type="complete" faq="no"]
+
+<h2>How big is a 3 Marla plot?</h2>
+[hcc_size_box marla="3"]
 
 <h2>Single storey or double storey on 3 Marla?</h2>
 <p>A 3 Marla plot is usually about 22.5 × 30 ft or 20 × 34 ft, which leaves room for only one bedroom, a small lounge, a kitchen and one bathroom on a single floor. That is why most 3 Marla houses in Lahore, Faisalabad and Gujranwala are built double storey (and many with a third "mumty" or roof room). The table below compares both options:</p>
@@ -93,13 +96,16 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 4 Marla plot is 900 sq ft. Built single storey with about {$e4['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e4['total_fmt']}</strong>, and grey structure only about <strong>{$e4g['total_fmt']}</strong>. A double storey 4 Marla house costs about {$e4d['total_fmt']}.</p>
 
-<figure class="illo"><img src="{$img}hero-4-marla.png?ver={$hcc_ver}" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated {$e4['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>4 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
+<figure class="illo"><img src="{$img}hero-4-marla.png?ver={$hcc_ver}" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated {$e4['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>4 Marla plot size, covered area and storeys at a glance.</figcaption></figure>
 
 <h2>How much does a 4 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="4" storeys="1"]
 <p class="hint">Single storey, {$e4['covered']} sq ft covered area, Lahore, typical design.</p>
 
 [house_cost_calculator mode="calculator_only" variant="4-marla" default_type="complete" faq="no"]
+
+<h2>4 Marla size and dimensions</h2>
+[hcc_size_box marla="4"]
 
 <h2>Is 4 Marla enough for a family house?</h2>
 <p>A 4 Marla plot (commonly 25 × 36 ft) fits two bedrooms, a lounge, kitchen and two bathrooms on one floor. It is a popular size in newer Lahore and Rawalpindi schemes because it sits between the very narrow 3 Marla plot and the more expensive 5 Marla plot. Families who need three or four bedrooms usually build double storey:</p>
@@ -167,6 +173,10 @@ HTML
 <p>Unlike Punjab, Karachi plots are sold in <strong>square yards</strong> (1 sq yd = 9 sq ft): 120, 240, 400, 500 and 1,000 sq yd are the common sizes. A 120 sq yd plot (1,080 sq ft) is slightly smaller than a 5 Marla (1,125 sq ft) plot, and most are built ground + 1. Where the Marla is used, Karachi and cantonment areas often use 250 sq ft per Marla.</p>
 [hcc_city_plots city="karachi"]
 
+<h2>Karachi house construction cost per square yard plot</h2>
+<p>The table below covers the common Karachi plot sizes from 80 to 1,000 sq yd, built as ground floor only or ground + 1, at standard quality with Karachi rates. Use the calculator for ground + 2, a basement or a different finishing level.</p>
+[hcc_sqyd_table city="karachi"]
+
 [house_cost_calculator mode="calculator_only" variant="city-karachi" city="karachi" default_type="complete" faq="no"]
 
 <h2>Who approves building plans in Karachi?</h2>
@@ -199,6 +209,11 @@ HTML
 [hcc_city_plots city="islamabad"]
 
 [house_cost_calculator mode="calculator_only" variant="city-islamabad" city="islamabad" default_type="complete" faq="no"]
+
+<h2>Rawalpindi, DHA and Bahria Town</h2>
+<p>Many "Islamabad" plots are actually in Rawalpindi district or in private societies along GT Road and the Islamabad Expressway, such as DHA Islamabad and Bahria Town. Labour in Rawalpindi is a little cheaper than in the CDA sectors, so the calculator uses a lower city factor there:</p>
+[hcc_city_rates city="rawalpindi"]
+<p>Societies follow their own bylaws on coverage, setbacks and elevations, so the covered area you are allowed to build can differ from a CDA sector plot of the same size. Check the society's current building regulations before finalising the drawing, then enter that covered area in the calculator above.</p>
 
 <h2>Who approves building plans in Islamabad?</h2>
 <p>In CDA sectors, plans are approved by the <strong>Capital Development Authority (CDA)</strong> building control section. Private housing societies in the capital territory — for example DHA Islamabad and Bahria Town — approve plans through their own offices. Rawalpindi areas fall under RDA or the cantonment boards. Approval fees and the time taken differ a lot between these bodies; check the current schedule before you budget.</p>
@@ -258,13 +273,18 @@ HTML
 	/* ---------------- C1.7 — steel ---------------- */
 	$steel_rate = number_format( $r['steel'] );
 	$steel_ton = number_format( $r['steel'] * 1000 );
+	$steel_40 = number_format( $r['steel'] * 40 );
 	$steel_5m = number_format( round( $g5['qty']['steelKg'] ) );
 	$defs['steel-saria-rate-today'] = array(
 		'title' => 'Saria Rate Today in Pakistan (2026): Steel Price per Kg',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> ConstructionCostPK's planning rate for Grade 60 steel (saria) is <strong>PKR {$steel_rate} per kg</strong> — PKR {$steel_ton} per ton — including typical wastage and binding wire. A single storey 5 Marla house needs about {$steel_5m} kg. Mill prices change often, so confirm with your dealer on the day you buy.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> ConstructionCostPK's planning rate for Grade 60 steel (saria) is <strong>PKR {$steel_rate} per kg</strong> — PKR {$steel_40} per 40 kg and PKR {$steel_ton} per ton — including typical wastage and binding wire. A single storey 5 Marla house needs about {$steel_5m} kg. Mill prices change often, so confirm with your dealer on the day you buy.</p>
 
-<h2>Steel rate used in our calculator</h2>
+<h2>Aaj ka sariya rate (today's steel rate)</h2>
+[hcc_steel_rate_table]
+<p class="hint">This is a delivered planning rate for Grade 60 bars including typical wastage and binding wire, checked against mill and dealer price lists. Ex-mill prices are usually a little lower and change often, so confirm with your dealer on the day you buy.</p>
+
+<h2>All material rates used in our calculator</h2>
 [hcc_material_rates]
 
 <h2>Brand-wise saria prices</h2>
@@ -402,7 +422,7 @@ function hcc_material_faq_items( $m ) {
 		array( 'q' => 'What is the cement rate per bag in Pakistan today?', 'a' => 'ConstructionCostPK uses a planning rate of PKR ' . number_format( $r['cement'] ) . ' per 50 kg bag (rates last updated ' . hcc_rates_date_human() . '). Actual prices vary by brand, city and dealer, so ask two or three dealers for today\'s quote.' ),
 		array( 'q' => 'How many cement bags are needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( $g5['qty']['cementBags'] ) ) . ' bags for the grey structure of a single storey 5 Marla house (' . $b['cementBags'] . ' bags per sq ft of covered area at standard quality), or about ' . number_format( round( $g5d['qty']['cementBags'] ) ) . ' bags for a double storey one.' ),
 		array( 'q' => 'Which cement is best for foundations in salty soil?', 'a' => 'Sulphate-resisting cement (SRC) is normally recommended for foundations in soil or groundwater with high sulphate content, such as in parts of coastal Karachi. Follow your structural engineer\'s specification.' ),
-		array( 'q' => 'Cement ki bori ka rate kya hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['cement'] ) . ' per 50 kg bori hai. Brand aur sheher ke hisaab se asal qeemat alag hoti hai — dealer se aaj ka rate zaroor poochein.' ),
+		array( 'q' => 'Cement ki ek bori kitne ki hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['cement'] ) . ' per 50 kg bori hai. Brand aur sheher ke hisaab se asal qeemat alag hoti hai — dealer se aaj ka rate zaroor poochein.' ),
 	);
 }
 function hcc_material_faq_render( $m ) {

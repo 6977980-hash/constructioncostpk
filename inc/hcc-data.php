@@ -27,6 +27,10 @@ function hcc_rates_date() {
 	$d = hcc_opt( 'rates_updated', HCC_RATES_DATE_DEFAULT );
 	return preg_match( '/^\d{4}-\d{2}-\d{2}$/', $d ) ? $d : HCC_RATES_DATE_DEFAULT;
 }
+/** "Oct 2026" — the month of the last rates review, for titles. */
+function hcc_rates_month() {
+	return date_i18n( 'M Y', strtotime( hcc_rates_date() . ' 12:00:00' ) );
+}
 function hcc_rates_date_human() {
 	return date_i18n( 'j F Y', strtotime( hcc_rates_date() . ' 12:00:00' ) );
 }
@@ -195,12 +199,12 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Grey structure costs about PKR ' . number_format( round( $g ) ) . ' per sq ft in Lahore (' . $y . ') — PKR ' . hcc_lakh_crore( $e5g['grandTotal'] ) . ' for a 5 Marla house. Free calculator with materials & PDF.',
 		),
 		'5-marla-house-construction-cost' => array(
-			'title' => '5 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' (Calculator)',
-			'desc'  => 'A 5 Marla house costs about PKR ' . hcc_lakh_crore( $e5c['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( $e5g['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator for your city with PDF report.',
+			'title' => '5 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 1125, 2 )['grandTotal'] ) . ' Double',
+			'desc'  => '5 Marla (1,125 sq ft) house in ' . $y . ': PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' single storey, PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
 		),
 		'7-marla-house-construction-cost' => array(
-			'title' => '7 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' (Calculator)',
-			'desc'  => 'A 7 Marla house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1, 'grey' )['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator for your city with PDF report.',
+			'title' => '7 Marla House Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' | 1,575 Sq Ft Plot',
+			'desc'  => '7 Marla = 1,575 sq ft (175 sq yd). A single storey house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1 )['grandTotal'] ) . ', double storey PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 2 )['grandTotal'] ) . ', grey structure PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1, 'grey' )['grandTotal'] ) . ' (' . $y . ', Lahore).',
 		),
 		'10-marla-house-construction-cost' => array(
 			'title' => '10 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 2250, 2 )['grandTotal'] ),
@@ -211,8 +215,8 @@ function hcc_seo_meta_map() {
 			'desc'  => 'A double storey 1 Kanal house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 4500, 2 )['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( hcc_estimate( 4500, 2, 'grey' )['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator with PDF.',
 		),
 		'marla-kanal-standards-pakistan' => array(
-			'title' => '1 Marla in Sq Ft: Pakistan\'s 4 Marla & Kanal Standards (' . $y . ')',
-			'desc'  => '1 Marla is 225 sq ft in most societies, but 250, 272 and 272.25 sq ft standards also exist — so 1 Kanal is 4,500–5,445 sq ft. See the table, then calculate.',
+			'title' => '1 Marla = 225 Sq Ft, 1 Kanal = 20 Marla: Converter (' . $y . ')',
+			'desc'  => '7 Marla = 1,575 sq ft (175 gaz), 4 Kanal = 80 Marla, 1 Marla = 25 sq yd. All 4 Marla standards (225 to 272.25 sq ft) with a Marla, Kanal & sq ft converter.',
 		),
 		'construction-cost-guides' => array(
 			'title' => 'Construction Cost Guides Pakistan ' . $y . ' – Marla, Kanal & Per Sq Ft',
@@ -235,8 +239,8 @@ function hcc_seo_meta_map() {
 			'desc'  => 'ConstructionCostPK disclaimer: our construction cost figures are planning estimates, not quotations. Always confirm with a licensed contractor or engineer.',
 		),
 		'3-marla-house-construction-cost' => array(
-			'title' => '3 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 675, 1 )['grandTotal'] ) . ' (Calculator)',
-			'desc'  => 'A 3 Marla house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1 )['grandTotal'] ) . ' complete or PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1, 'grey' )['grandTotal'] ) . ' grey structure (' . $y . ', Lahore). Free calculator for your city with PDF report.',
+			'title' => '3 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 675, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 675, 2 )['grandTotal'] ) . ' Double',
+			'desc'  => '3 Marla (675 sq ft) house in ' . $y . ': about PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1 )['grandTotal'] ) . ' single storey or ' . hcc_lakh_crore( hcc_estimate( 675, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
 		),
 		'4-marla-house-construction-cost' => array(
 			'title' => '4 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 900, 1 )['grandTotal'] ) . ' (Calculator)',
@@ -251,8 +255,8 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Building in Karachi costs about PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'karachi' ) ) ) . '/sq ft complete, PKR ' . number_format( round( hcc_rate_per_sqft( 'grey', 'karachi' ) ) ) . '/sq ft grey (' . $y . '). 120, 240 & 400 sq yd house costs + free calculator.',
 		),
 		'construction-cost-islamabad' => array(
-			'title' => 'Construction Cost Islamabad per Sq Ft ' . $y . ' (CDA Plot Sizes)',
-			'desc'  => 'Construction in Islamabad costs about PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'islamabad' ) ) ) . '/sq ft complete, PKR ' . number_format( round( hcc_rate_per_sqft( 'grey', 'islamabad' ) ) ) . '/sq ft grey (' . $y . '). 25x50 to 50x90 plot costs + free calculator.',
+			'title' => 'Islamabad Construction Cost ' . $y . ': PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'islamabad' ) ) ) . '/Sq Ft (CDA, DHA)',
+			'desc'  => 'Building in Islamabad costs about PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'islamabad' ) ) ) . '/sq ft complete and PKR ' . number_format( round( hcc_rate_per_sqft( 'grey', 'islamabad' ) ) ) . ' grey (' . $y . '). 25x50 to 50x90 plots, Rawalpindi, DHA & Bahria + free calculator.',
 		),
 		'construction-cost-by-city' => array(
 			'title' => 'Construction Cost by City in Pakistan ' . $y . ' (Per Sq Ft Table)',
@@ -263,12 +267,12 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Construction material rates used by our calculator: cement per bag, steel per kg, bricks per 1,000, sand and crush per cft — with rate date and notes.',
 		),
 		'cement-rate-today-pakistan' => array(
-			'title' => 'Cement Rate in Pakistan Today (' . $y . '): Bag Price & Bags Needed',
-			'desc'  => 'Cement rate in Pakistan: planning rate PKR ' . number_format( hcc_default_calc_rates()['cement'] ) . ' per 50 kg bag (' . $y . '). Bags needed for 3 Marla to 1 Kanal houses and how a price change moves your budget.',
+			'title' => 'Cement Price Today in Pakistan: PKR ' . number_format( hcc_default_calc_rates()['cement'] ) . ' per Bag (' . hcc_rates_month() . ')',
+			'desc'  => 'Cement ki ek bori: PKR ' . number_format( hcc_default_calc_rates()['cement'] ) . ' planning rate, checked ' . hcc_rates_date_human() . '. Brands (Lucky, DG, Bestway, Maple Leaf) and bags needed for 3 Marla to 1 Kanal houses.',
 		),
 		'steel-saria-rate-today' => array(
-			'title' => 'Saria Rate Today in Pakistan (' . $y . '): Steel Price per Kg & Ton',
-			'desc'  => 'Steel (saria) planning rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg (' . $y . '). Grade 40 vs 60, sutar sizes, weight per foot and steel needed for 5 Marla to 1 Kanal.',
+			'title' => 'Saria Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per 40 Kg (' . hcc_rates_month() . ')',
+			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per 40 kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton (Grade 60, ' . hcc_rates_date_human() . '). Steel for 5 Marla to 1 Kanal.',
 		),
 		'pakistan-construction-cost-index' => array(
 			'title' => 'Pakistan Construction Cost Index ' . date_i18n( 'F Y' ) . ' (City-wise)',

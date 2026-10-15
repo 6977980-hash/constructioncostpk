@@ -22,6 +22,11 @@ add_action( 'template_redirect', function () {
 		wp_safe_redirect( home_url( '/' ), 301 );
 		exit;
 	}
+	// v1.10: the author archive has no posts — send it to the author section on About.
+	if ( is_author() && hcc_page_exists( 'about-us' ) ) {
+		wp_safe_redirect( hcc_page_url( 'about-us' ) . '#author', 301 );
+		exit;
+	}
 	// Old e-mail-based author slug → new slug.
 	if ( is_404() ) {
 		$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
@@ -206,13 +211,18 @@ function hcc_org_node() {
 }
 function hcc_author_node() {
 	$u = hcc_author_user();
-	$id = $u ? get_author_posts_url( $u->ID ) : home_url( '/about-us/' ) . '#author';
-	$n = array( '@type' => 'Person', '@id' => $id, 'name' => hcc_author_name(), 'url' => hcc_page_exists( 'about-us' ) ? hcc_page_url( 'about-us' ) : home_url( '/' ), 'worksFor' => array( '@id' => hcc_graph_ids()['org'] ) );
+	// v1.10: the person lives on the About page (the author archive is empty and redirects there).
+	$about = hcc_page_exists( 'about-us' ) ? hcc_page_url( 'about-us' ) : home_url( '/' );
+	$n = array( '@type' => 'Person', '@id' => $about . '#author', 'name' => hcc_author_name(), 'url' => $about . '#author',
+		'jobTitle' => 'Founder, ' . HCC_BRAND, 'description' => hcc_author_bio(), 'worksFor' => array( '@id' => hcc_graph_ids()['org'] ),
+		'knowsAbout' => array( 'House construction cost estimation', 'Construction material prices in Pakistan', 'Marla and Kanal land measurement' ) );
+	$cred = hcc_opt( 'author_credentials' );
+	if ( $cred ) $n['description'] .= ' ' . $cred;
 	$li = hcc_opt( 'author_linkedin' );
 	if ( $li ) $n['sameAs'] = array( esc_url_raw( $li ) );
 	if ( $u ) {
 		$av = get_avatar_url( $u->ID, array( 'size' => 256 ) );
-		if ( $av ) $n['image'] = array( '@type' => 'ImageObject', 'url' => $av );
+		if ( $av ) $n['image'] = array( '@type' => 'ImageObject', 'url' => html_entity_decode( $av, ENT_QUOTES ) );
 	}
 	return $n;
 }
@@ -286,6 +296,9 @@ function hcc_rank_math_json_ld( $data, $jsonld = null ) {
 	$reg = hcc_page_registry();
 	$is_article_page = 'home' !== $key && in_array( $reg[ $key ]['type'], array( 'calculator', 'guide', 'hub', 'trust' ), true );
 	$author = hcc_author_node();
+	// v1.10: Rank Math names the person after the (empty) author archive; point it at About#author.
+	$au = hcc_author_user();
+	if ( $au ) $data = hcc_graph_replace_ids( $data, get_author_posts_url( $au->ID ), $author['@id'] );
 	if ( $is_article_page ) {
 		if ( ! empty( $has['Article'] ) || ! empty( $has['BlogPosting'] ) || ! empty( $has['NewsArticle'] ) ) {
 			$ak = ! empty( $has['Article'] ) ? $has['Article'][0] : ( ! empty( $has['BlogPosting'] ) ? $has['BlogPosting'][0] : $has['NewsArticle'][0] );

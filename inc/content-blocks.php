@@ -160,6 +160,94 @@ function hcc_sc_plot_tables( $atts ) {
 add_shortcode( 'hcc_plot_tables', 'hcc_sc_plot_tables' );
 
 /* --------------------------------------------------------------------------
+ * v1.10 — size answers: plot size under each Marla standard, a conversion
+ * table and a small Marla / Kanal / sq ft / gaz converter.
+ * ------------------------------------------------------------------------ */
+function hcc_marla_standards() {
+	return array( 225 => 'Society Marla (225 sq ft)', 250 => 'Karachi / Cantonment (250 sq ft)', 272 => 'Land Revenue (272 sq ft)', '272.25' => 'Patwari / revenue record (272.25 sq ft)' );
+}
+function hcc_num( $n, $dec = 0 ) {
+	return hcc_trim_number( number_format( $n, $dec ) );
+}
+/** [hcc_size_box marla="7"] — how big an N Marla plot is, under every standard. */
+function hcc_sc_size_box( $atts ) {
+	$a = shortcode_atts( array( 'marla' => 5 ), $atts );
+	$m = max( 0.5, (float) $a['marla'] );
+	$label = 20 == $m ? '1 Kanal (20 Marla)' : hcc_num( $m, 1 ) . ' Marla';
+	$dims = array( '3' => '22.5 × 30 ft or 20 × 34 ft', '4' => '25 × 36 ft', '5' => '25 × 45 ft', '7' => '35 × 45 ft', '10' => 'about 35 × 65 ft', '20' => '50 × 90 ft' );
+	$k = hcc_num( $m, 1 );
+	$sq = $m * 225;
+	$rows = array();
+	foreach ( hcc_marla_standards() as $per => $name ) {
+		$f = $m * (float) $per;
+		$rows[] = array( esc_html( $name ), hcc_num( $f, 2 ) . ' sq ft', hcc_num( $f / 9, 1 ) . ' sq yd (gaz)', hcc_num( $f * 0.09290304, 1 ) . ' m²' );
+	}
+	return '<p class="size-answer"><strong>' . esc_html( $label ) . ' = ' . number_format( $sq ) . ' sq ft</strong> (' . hcc_num( $sq / 9, 1 ) . ' sq yd or gaz, about ' . hcc_num( $sq * 0.09290304 ) . ' m², ' . hcc_num( $m / 20, 2 ) . ' Kanal) under the common 225 sq ft Marla.'
+		. ( isset( $dims[ $k ] ) ? ' Common plot dimensions: ' . esc_html( $dims[ $k ] ) . '.' : '' ) . ' Under the older 272.25 sq ft Marla the same plot is ' . hcc_num( $m * 272.25, 2 ) . ' sq ft.</p>'
+		. hcc_table( array( 'Marla standard', esc_html( $label ), 'Square yards', 'Square metres' ), $rows );
+}
+add_shortcode( 'hcc_size_box', 'hcc_sc_size_box' );
+
+/** [hcc_marla_conversions] — the conversions people search for most. */
+function hcc_sc_marla_conversions() {
+	$rows = array();
+	foreach ( array( 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15 ) as $m ) {
+		$rows[] = array( $m . ' Marla', number_format( $m * 225 ) . ' sq ft', hcc_num( $m * 25 ) . ' gaz', hcc_num( $m * 272.25, 2 ) . ' sq ft', hcc_num( $m / 20, 2 ) . ' Kanal' );
+	}
+	foreach ( array( 1, 2, 4, 8 ) as $k ) {
+		$rows[] = array( $k . ' Kanal', number_format( $k * 4500 ) . ' sq ft', number_format( $k * 500 ) . ' gaz', number_format( $k * 5445 ) . ' sq ft', ( $k * 20 ) . ' Marla' );
+	}
+	return hcc_table( array( 'Size', 'Sq ft (225 Marla)', 'Sq yd / gaz (225 Marla)', 'Sq ft (272.25 Marla)', 'In Marla / Kanal' ), $rows )
+		. '<p class="hint">1 Kanal is always 20 Marla. 1 acre = 43,560 sq ft = 8 Kanal = 160 Marla under the 272.25 sq ft revenue Marla.</p>';
+}
+add_shortcode( 'hcc_marla_conversions', 'hcc_sc_marla_conversions' );
+
+/** [hcc_area_converter] — converts between Marla, Kanal, sq ft, sq yd, m² and acres in the browser. */
+function hcc_sc_area_converter() {
+	$opts = '';
+	foreach ( hcc_marla_standards() as $per => $name ) $opts .= '<option value="' . esc_attr( $per ) . '">' . esc_html( $name ) . '</option>';
+	$h = '<div class="area-converter card" id="area-converter"><h3>Marla, Kanal &amp; square feet converter</h3><div class="row-inline">'
+		. '<label>Amount <input type="number" id="ac-val" value="7" min="0" step="any" inputmode="decimal"></label>'
+		. '<label>Unit <select id="ac-unit"><option value="marla">Marla</option><option value="kanal">Kanal</option><option value="sqft">Sq ft</option><option value="sqyd">Sq yd (gaz)</option><option value="sqm">Square metres</option><option value="acre">Acre</option></select></label>'
+		. '<label>Marla standard <select id="ac-std">' . $opts . '</select></label></div>'
+		. '<output id="ac-out" for="ac-val ac-unit ac-std" aria-live="polite"></output></div>';
+	$h .= '<script data-no-optimize="1">(function(){var v=document.getElementById("ac-val"),u=document.getElementById("ac-unit"),s=document.getElementById("ac-std"),o=document.getElementById("ac-out");if(!v)return;'
+		. 'function f(n,d){return (+n.toFixed(d)).toLocaleString("en-US",{maximumFractionDigits:d});}'
+		. 'function run(){var x=parseFloat(v.value)||0,m=parseFloat(s.value),sq={marla:m,kanal:20*m,sqft:1,sqyd:9,sqm:10.7639104,acre:43560}[u.value]*x;'
+		. 'o.innerHTML="<strong>"+f(sq,2)+" sq ft</strong> = "+f(sq/9,2)+" sq yd (gaz) = "+f(sq/10.7639104,2)+" m² = <strong>"+f(sq/m,2)+" Marla</strong> = "+f(sq/m/20,3)+" Kanal = "+f(sq/43560,4)+" acre";}'
+		. 'v.addEventListener("input",run);u.addEventListener("change",run);s.addEventListener("change",run);run();})();</script>';
+	return $h;
+}
+add_shortcode( 'hcc_area_converter', 'hcc_sc_area_converter' );
+
+/** [hcc_sqyd_table] — Karachi plot sizes in square yards, single storey and ground + 1. */
+function hcc_sc_sqyd_table( $atts ) {
+	$a = shortcode_atts( array( 'city' => 'karachi' ), $atts );
+	$rows = array();
+	foreach ( array( 80, 120, 200, 240, 400, 500, 1000 ) as $yd ) {
+		$p = $yd * 9;
+		$one = hcc_estimate( $p, 1, 'complete', 'standard', $a['city'] );
+		$two = hcc_estimate( $p, 2, 'complete', 'standard', $a['city'] );
+		$g2 = hcc_estimate( $p, 2, 'grey', 'standard', $a['city'] );
+		$rows[] = array( $yd . ' sq yd', number_format( $p ) . ' sq ft', hcc_pkr( $one['grandTotal'] ), number_format( $two['covered'] ) . ' sq ft', hcc_pkr( $g2['grandTotal'] ), hcc_pkr( $two['grandTotal'] ) );
+	}
+	return hcc_table( array( 'Plot', 'Plot area', 'Ground floor only (complete)', 'Ground + 1 covered', 'Ground + 1 grey structure', 'Ground + 1 complete' ), $rows )
+		. '<p class="hint">Standard quality, typical design, calculator default rates (' . esc_html( hcc_rates_date_human() ) . '). 1 sq yd = 9 sq ft.</p>';
+}
+add_shortcode( 'hcc_sqyd_table', 'hcc_sc_sqyd_table' );
+
+/** [hcc_steel_rate_table] — the planning steel rate per kg, per 40 kg (maund) and per ton, with its date. */
+function hcc_sc_steel_rate_table() {
+	$r = hcc_default_calc_rates()['steel'];
+	return hcc_table( array( 'Grade 60 saria', 'Planning rate', 'Checked on' ), array(
+		array( 'Per kg', 'PKR ' . number_format( $r ), esc_html( hcc_rates_date_human() ) ),
+		array( 'Per 40 kg (1 maund)', 'PKR ' . number_format( $r * 40 ), esc_html( hcc_rates_date_human() ) ),
+		array( 'Per ton (1,000 kg)', 'PKR ' . number_format( $r * 1000 ), esc_html( hcc_rates_date_human() ) ),
+	) );
+}
+add_shortcode( 'hcc_steel_rate_table', 'hcc_sc_steel_rate_table' );
+
+/* --------------------------------------------------------------------------
  * Material-page tables (cement / steel) — quantities per plot size and the
  * budget impact of a price move. Uses the engine's quantity factors.
  * ------------------------------------------------------------------------ */
@@ -346,9 +434,9 @@ function hcc_variant_after_calculator( $variant ) {
 		$ex = array();
 		foreach ( hcc_std_plots() as $p ) {
 			$e = hcc_estimate( $p[1], $p[2], 'grey' );
-			$ex[] = array( esc_html( $p[0] ), 1 === $p[2] ? 'Single' : 'Double', number_format( $e['covered'] ) . ' sq ft', hcc_pkr( $e['costPerSqft'] ), hcc_pkr( $e['grandTotal'] ) );
+			$ex[] = array( esc_html( $p[0] ), 1 === $p[2] ? 'Single' : 'Double', number_format( $e['covered'] ) . ' sq ft', hcc_pkr( $e['costPerSqft'] ), hcc_pkr( $e['grandTotal'] ), hcc_pkr( round( $e['grandTotal'] / ( $p[1] / 225 ), -3 ) ) );
 		}
-		echo hcc_table( array( 'Plot', 'Storeys', 'Covered area', 'Grey / sq ft', 'Grey structure total' ), $ex );
+		echo hcc_table( array( 'Plot', 'Storeys', 'Covered area', 'Grey / sq ft', 'Grey structure total', 'Per Marla of plot' ), $ex );
 		?>
 
 		<h3>Common grey structure mistakes that cost money</h3>

@@ -4,7 +4,7 @@ Theme URI: https://constructioncostpk.com/
 Author: Ali Ahmad (ConstructionCostPK)
 Author URI: https://constructioncostpk.com/about-us/
 Description: A fast, SEO-optimized WordPress theme built around a free house construction cost calculator for Pakistan — grey structure, complete house and turnkey construction cost per square foot, material quantities and an editable, itemized PDF report. Includes a full construction-cost guide, FAQ section with valid schema, and dedicated policy pages.
-Version: 1.9.0
+Version: 1.10.0
 Requires at least: 6.0
 Requires PHP: 7.4
 Tested up to: 7.1
@@ -408,3 +408,10 @@ details.faq .accordion-body p{margin:0; color:var(--ink)}
 .consent-btns{display:flex; gap:8px}
 .embed-code{width:100%; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; padding:10px; border:1.5px solid var(--line); border-radius:var(--radius-sm); margin:6px 0 10px}
 .changelog li{margin-bottom:6px}
+/* v1.10 — Marla / Kanal converter */
+.area-converter{margin:12px 0 18px}
+.area-converter .row-inline{display:flex; flex-wrap:wrap; gap:10px}
+.area-converter label{display:flex; flex-direction:column; gap:4px; flex:1 1 140px; font-weight:600; font-size:14px}
+.area-converter input,.area-converter select{width:100%; min-height:40px}
+.area-converter output{display:block; margin-top:10px; line-height:1.6}
+.size-answer{margin-bottom:8px}
