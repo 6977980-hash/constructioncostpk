@@ -15,6 +15,7 @@ function hcc_v18_page_definitions() {
 	$u = function ( $k ) { return esc_url( home_url( '/' . trim( $k, '/' ) . ( $k ? '/' : '' ) ) ); };
 	$home = esc_url( home_url( '/' ) );
 	$img = get_template_directory_uri() . '/assets/img/';
+	$hcc_ver = HCC_VERSION;
 	$e3 = hcc_estimate( 675, 1 ); $e3g = hcc_estimate( 675, 1, 'grey' ); $e3d = hcc_estimate( 675, 2 );
 	$e4 = hcc_estimate( 900, 1 ); $e4g = hcc_estimate( 900, 1, 'grey' ); $e4d = hcc_estimate( 900, 2 );
 	$r = hcc_default_calc_rates();
@@ -32,6 +33,14 @@ function hcc_v18_page_definitions() {
 	$e3['k120_fmt'] = hcc_format_pkr( hcc_estimate( 1080, 2, 'complete', 'standard', 'karachi' )['grandTotal'] );
 	$e3['i3060_fmt'] = hcc_format_pkr( hcc_estimate( 1800, 2, 'complete', 'standard', 'islamabad' )['grandTotal'] );
 	$e3['bricks_fmt'] = number_format( $r['bricksPer1000'] );
+	$e4['extra_covered'] = number_format( hcc_suggest_covered_area( 1125, 1 ) - hcc_suggest_covered_area( 900, 1 ) );
+	$y = hcc_year();
+	// How much cheaper smaller Punjab cities are than Lahore, from the engine.
+	$lr = hcc_rate_per_sqft( 'complete', 'lahore' );
+	$cheaper = array();
+	foreach ( array( 'gujranwala', 'sargodha', 'multan' ) as $c ) $cheaper[] = ( 1 - hcc_rate_per_sqft( 'complete', $c ) / $lr ) * 100;
+	$punjab_cheaper = round( min( $cheaper ) ) . '–' . round( max( $cheaper ) ) . '%';
+	$g5 = hcc_estimate( 1125, 1, 'grey' ); $g5d = hcc_estimate( 1125, 2, 'grey' );
 
 	$defs = array();
 
@@ -39,11 +48,11 @@ function hcc_v18_page_definitions() {
 	$defs['3-marla-house-construction-cost'] = array(
 		'title' => '3 Marla House Construction Cost in Pakistan (2026)',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> a 3 Marla plot is 675 sq ft. Built single storey with about {$e3['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e3['total_fmt']}</strong> and the grey structure alone about <strong>{$e3g['total_fmt']}</strong>. Most 3 Marla owners build double storey to fit 3 bedrooms.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> a 3 Marla plot is 675 sq ft. Built single storey with about {$e3['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e3['total_fmt']}</strong> and the grey structure alone about <strong>{$e3g['total_fmt']}</strong>. Most 3 Marla owners build double storey to fit 3 bedrooms: about {$e3d['covered']} sq ft for roughly <strong>{$e3d['total_fmt']}</strong>.</p>
 
-<figure class="illo"><img src="{$img}hero-3-marla.png" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated 574 sq ft single storey covered area and an estimated {$e3['total_fmt']} complete house construction cost" width="1200" height="630" loading="eager"><figcaption>3 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
+<figure class="illo"><img src="{$img}hero-3-marla.png?ver={$hcc_ver}" alt="Infographic of a 3 Marla plot (675 sq ft) in Pakistan with an estimated {$e3['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>3 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
 
-<h2>How much does a 3 Marla house cost in 2026?</h2>
+<h2>How much does a 3 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="3" storeys="1"]
 <p class="hint">Single storey, {$e3['covered']} sq ft covered area, Lahore, typical design. Use the calculator below for your own city and finishing level.</p>
 
@@ -52,7 +61,7 @@ function hcc_v18_page_definitions() {
 <h2>Single storey or double storey on 3 Marla?</h2>
 <p>A 3 Marla plot is usually about 22.5 × 30 ft or 20 × 34 ft, which leaves room for only one bedroom, a small lounge, a kitchen and one bathroom on a single floor. That is why most 3 Marla houses in Lahore, Faisalabad and Gujranwala are built double storey (and many with a third "mumty" or roof room). The table below compares both options:</p>
 [hcc_plot_tables marla="3" storeys="1" part="storeys"]
-<p>The double storey option costs about {$e3d['total_fmt']} for roughly {$e3d['covered']} sq ft — almost double the living space for about {$e3d['ratio']}× the single storey cost, because the plot, foundation width and boundary are already paid for.</p>
+<p>The double storey option costs about {$e3d['total_fmt']} for roughly {$e3d['covered']} sq ft — almost double the living space for about {$e3d['ratio']}× the single storey cost. The cost per sq ft is a little higher (about 3% more for the second storey's columns, steel and scaffolding), but you get the extra rooms without buying more land.</p>
 
 <h2>What layout fits on a 3 Marla plot?</h2>
 <ul>
@@ -64,7 +73,7 @@ function hcc_v18_page_definitions() {
 
 <h2>Material quantities for a 3 Marla house</h2>
 [hcc_plot_tables marla="3" storeys="1" part="qty"]
-<p>These are grey-structure quantities for the single storey option at standard quality. A double storey house roughly doubles them. Check current prices on our <a href="{$u('cement-rate-today-pakistan')}">cement rate</a> and <a href="{$u('steel-saria-rate-today')}">saria rate</a> pages.</p>
+<p>These are grey-structure quantities for the single storey option at standard quality. A double storey house needs a little more than double (about 3% extra per added storey). Check current prices on our <a href="{$u('cement-rate-today-pakistan')}">cement rate</a> and <a href="{$u('steel-saria-rate-today')}">saria rate</a> pages.</p>
 
 <h2>Ways to keep a 3 Marla budget under control</h2>
 <ul>
@@ -84,9 +93,9 @@ HTML
 		'content' => <<<HTML
 <p class="quick-answer-box"><strong>Quick answer:</strong> a 4 Marla plot is 900 sq ft. Built single storey with about {$e4['covered']} sq ft of covered area, a complete house (standard quality, Lahore rates) costs about <strong>{$e4['total_fmt']}</strong>, and grey structure only about <strong>{$e4g['total_fmt']}</strong>. A double storey 4 Marla house costs about {$e4d['total_fmt']}.</p>
 
-<figure class="illo"><img src="{$img}hero-4-marla.png" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated 765 sq ft single storey covered area and an estimated {$e4['total_fmt']} complete house construction cost" width="1200" height="630" loading="eager"><figcaption>4 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
+<figure class="illo"><img src="{$img}hero-4-marla.png?ver={$hcc_ver}" alt="Infographic of a 4 Marla plot (900 sq ft) in Pakistan with an estimated {$e4['covered']} sq ft single storey covered area" width="1200" height="630" loading="eager"><figcaption>4 Marla plot size, covered area and estimated complete-house cost at a glance.</figcaption></figure>
 
-<h2>How much does a 4 Marla house cost in 2026?</h2>
+<h2>How much does a 4 Marla house cost in {$y}?</h2>
 [hcc_plot_tables marla="4" storeys="1"]
 <p class="hint">Single storey, {$e4['covered']} sq ft covered area, Lahore, typical design.</p>
 
@@ -108,7 +117,7 @@ HTML
 <p>Price these against today's <a href="{$u('construction-material-rates')}">construction material rates</a>.</p>
 
 <h2>4 Marla vs 5 Marla: is the extra Marla worth it?</h2>
-<p>A 5 Marla plot adds 225 sq ft of land and about 190 sq ft of single storey covered area. At standard quality that is roughly {$e4['diff5_fmt']} more construction cost — see the <a href="{$u('5-marla-house-construction-cost')}">5 Marla house estimate</a> for the full breakdown, or the smaller <a href="{$u('3-marla-house-construction-cost')}">cost of a 3 Marla home</a>. Every size is compared in our <a href="{$u('construction-cost-guides')}">cost guides hub</a>.</p>
+<p>A 5 Marla plot adds 225 sq ft of land and about {$e4['extra_covered']} sq ft of single storey covered area. At standard quality that is roughly {$e4['diff5_fmt']} more construction cost — see the <a href="{$u('5-marla-house-construction-cost')}">5 Marla house estimate</a> for the full breakdown, or the smaller <a href="{$u('3-marla-house-construction-cost')}">cost of a 3 Marla home</a>. Every size is compared in our <a href="{$u('construction-cost-guides')}">cost guides hub</a>.</p>
 
 [hcc_faq variant="4-marla"]
 HTML
@@ -118,7 +127,7 @@ HTML
 	$defs['construction-cost-lahore'] = array(
 		'title' => 'Construction Cost in Lahore (2026): Per Sq Ft Rates',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> building a house in Lahore costs about <strong>{$cityrate('lahore')} per sq ft</strong> for a standard-quality complete house and about <strong>{$cityrate('lahore','grey')} per sq ft</strong> for grey structure in 2026. A single storey 5 Marla house comes to roughly {$e3['lahore5_fmt']}; a double storey 1 Kanal house to about {$e3['lahore1k_fmt']}.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> building a house in Lahore costs about <strong>{$cityrate('lahore')} per sq ft</strong> for a standard-quality complete house and about <strong>{$cityrate('lahore','grey')} per sq ft</strong> for grey structure in {$y}. A single storey 5 Marla house comes to roughly {$e3['lahore5_fmt']}; a double storey 1 Kanal house to about {$e3['lahore1k_fmt']}.</p>
 
 <h2>Lahore construction rates per sq ft</h2>
 [hcc_city_rates city="lahore"]
@@ -136,7 +145,7 @@ HTML
 <ul>
 <li><strong>Society rules add cost:</strong> DHA and Bahria require approved drawings, specific boundary wall designs and completion inspections, and some charge for water/sewer connections separately.</li>
 <li><strong>Material supply is close by:</strong> cement from Punjab plants and steel from Lahore mills keep material transport lower than in many smaller cities — Lahore is our base city (factor 1.00).</li>
-<li><strong>Labour demand is high:</strong> skilled masons and tile fixers in Lahore charge more than in Gujranwala, Sargodha or Multan, which is why smaller Punjab cities come out 10–12% cheaper per sq ft.</li>
+<li><strong>Labour demand is high:</strong> skilled masons and tile fixers in Lahore charge more than in Gujranwala, Sargodha or Multan, which is why smaller Punjab cities such as Gujranwala, Sargodha and Multan come out about {$punjab_cheaper} cheaper per sq ft for a complete house.</li>
 <li><strong>Water table and soil:</strong> in low-lying parts of the city, plan damp-proofing and plinth height carefully — the cost is small compared with repairing rising damp later.</li>
 </ul>
 <p>Compare Lahore with other cities in the <a href="{$u('construction-cost-by-city')}">city-by-city cost table</a>, see <a href="{$u('construction-cost-karachi')}">Karachi building costs</a> and <a href="{$u('construction-cost-islamabad')}">Islamabad per sq ft rates</a>, or use the <a href="{$home}">main calculator</a>.</p>
@@ -149,7 +158,7 @@ HTML
 	$defs['construction-cost-karachi'] = array(
 		'title' => 'Construction Cost in Karachi (2026): Per Sq Ft & Per Sq Yd',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> in Karachi, a standard-quality complete house costs about <strong>{$cityrate('karachi')} per sq ft</strong> and grey structure about <strong>{$cityrate('karachi','grey')} per sq ft</strong> in 2026. A double storey house on a 120 sq yd plot comes to roughly {$e3['k120_fmt']}.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> in Karachi, a standard-quality complete house costs about <strong>{$cityrate('karachi')} per sq ft</strong> and grey structure about <strong>{$cityrate('karachi','grey')} per sq ft</strong> in {$y}. A double storey house on a 120 sq yd plot comes to roughly {$e3['k120_fmt']}.</p>
 
 <h2>Karachi construction rates per sq ft</h2>
 [hcc_city_rates city="karachi"]
@@ -180,7 +189,7 @@ HTML
 	$defs['construction-cost-islamabad'] = array(
 		'title' => 'Construction Cost in Islamabad (2026): Per Sq Ft Rates',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> Islamabad is the most expensive major city to build in: about <strong>{$cityrate('islamabad')} per sq ft</strong> for a standard complete house and <strong>{$cityrate('islamabad','grey')} per sq ft</strong> for grey structure in 2026. A double storey house on a 30×60 ft (8 Marla) plot costs roughly {$e3['i3060_fmt']}.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> Islamabad is the most expensive major city to build in: about <strong>{$cityrate('islamabad')} per sq ft</strong> for a standard complete house and <strong>{$cityrate('islamabad','grey')} per sq ft</strong> for grey structure in {$y}. A double storey house on a 30×60 ft (8 Marla) plot costs roughly {$e3['i3060_fmt']}.</p>
 
 <h2>Islamabad construction rates per sq ft</h2>
 [hcc_city_rates city="islamabad"]
@@ -208,9 +217,9 @@ HTML
 	);
 
 	/* ---------------- C1.6 — cement ---------------- */
-	$cement_bags5 = number_format( round( hcc_suggest_covered_area( 1125, 1 ) * $b['cementBags'] ) );
+	$cement_bags5 = number_format( round( $g5['qty']['cementBags'] ) );
 	$cement_rate = number_format( $r['cement'] );
-	$cement_5m_cost = hcc_format_pkr( round( hcc_suggest_covered_area( 1125, 1 ) * $b['cementBags'] ) * $r['cement'] );
+	$cement_5m_cost = hcc_format_pkr( round( $g5['qty']['cementBags'] ) * $r['cement'] );
 	$defs['cement-rate-today-pakistan'] = array(
 		'title' => 'Cement Rate in Pakistan Today (2026): Price per Bag',
 		'content' => <<<HTML
@@ -249,7 +258,7 @@ HTML
 	/* ---------------- C1.7 — steel ---------------- */
 	$steel_rate = number_format( $r['steel'] );
 	$steel_ton = number_format( $r['steel'] * 1000 );
-	$steel_5m = number_format( round( hcc_suggest_covered_area( 1125, 1 ) * $b['steelKg'] ) );
+	$steel_5m = number_format( round( $g5['qty']['steelKg'] ) );
 	$defs['steel-saria-rate-today'] = array(
 		'title' => 'Saria Rate Today in Pakistan (2026): Steel Price per Kg',
 		'content' => <<<HTML
@@ -294,7 +303,7 @@ HTML
 	$defs['construction-cost-by-city'] = array(
 		'title' => 'Construction Cost by City in Pakistan (2026)',
 		'content' => <<<HTML
-<p class="quick-answer-box"><strong>Quick answer:</strong> in 2026, standard-quality complete house construction costs about {$cityrate('islamabad')} per sq ft in Islamabad, {$cityrate('lahore')} in Lahore and {$cityrate('karachi')} in Karachi, and less in smaller cities such as Multan and Peshawar. Differences come mainly from labour and finishing rates.</p>
+<p class="quick-answer-box"><strong>Quick answer:</strong> in {$y}, standard-quality complete house construction costs about {$cityrate('islamabad')} per sq ft in Islamabad, {$cityrate('lahore')} in Lahore and {$cityrate('karachi')} in Karachi, and less in smaller cities such as Multan and Peshawar. Differences come mainly from labour and finishing rates.</p>
 <h2>Cost per sq ft in every city</h2>
 [hcc_city_table]
 <h2>Detailed city guides</h2>
@@ -323,11 +332,11 @@ HTML
 		'content' => <<<HTML
 <p>This page documents exactly how the ConstructionCostPK calculator turns your inputs into an estimate, so you can check every assumption. The same formulas run in your browser and on the server (for the tables in our guides), so the numbers always match.</p>
 <h2>1. Covered area</h2>
-<p>If you don't enter covered area, the calculator suggests one from the plot size and number of storeys using typical coverage ratios: 85% of the plot for plots up to 1,350 sq ft, 75% up to 2,250 sq ft, 65% up to 4,500 sq ft and 55% above that — multiplied by the number of storeys.</p>
+<p>If you don't enter covered area, the calculator suggests one from the plot size and number of storeys using typical ground-coverage ratios, multiplied by the number of storeys: 85% for plots up to 1,125 sq ft (5 Marla), 75% from 1,575 to 2,250 sq ft (7 to 10 Marla), 65% at 4,500 sq ft (1 Kanal) and 55% from 9,000 sq ft (2 Kanal). Between those sizes the ratio changes smoothly, so a bigger plot never gets less covered area than a smaller one.</p>
 <h2>2. Grey structure</h2>
-<p><strong>Materials</strong> = covered area × quantity per sq ft × quality factor × design factor × material rate × city material factor × storey factor. <strong>Labour</strong> = covered area × structure labour rate × city factor × storey factor × design labour factor. The storey factor adds 3% per extra storey; the city material factor applies only 35% of the city factor, because materials vary less between cities than labour does. A basement adds 45% to the grey rate for its area.</p>
+<p><strong>Quantity</strong> = covered area × quantity per sq ft × quality factor × design factor × storey factor. <strong>Materials</strong> = quantity × material rate × city material factor. <strong>Labour</strong> = covered area × structure labour rate × city factor × storey factor × design labour factor. The storey factor adds 3% per extra storey. The city material factor applies only 35% of the city factor, because materials vary less between cities than labour does, and it is applied only to our default rates: a rate you type in yourself is used exactly as entered. A basement costs 45% more per sq ft than the grey structure above it; its area is added to the material quantities, to the finishing area and to the area used for cost per sq ft.</p>
 <h2>3. Finishing and turnkey</h2>
-<p>Finishing = covered area × finishing rate for the chosen quality, split into material (tiles 30%, woodwork 20%, plumbing 16%, electrical 15%, paint 12%, misc. 7%) and labour. Extra bathrooms beyond one per two bedrooms, and extra kitchens, are added at a fixed cost per room. Turnkey adds a per-sq-ft fit-out allowance (cabinets, wardrobes, fixtures).</p>
+<p>Finishing = covered area (plus any basement) × finishing rate for the chosen quality, split into material (tiles 30%, woodwork 20%, plumbing 16%, electrical 15%, paint 12%, misc. 7%) and labour. Extra bathrooms beyond one per two bedrooms, and extra kitchens, are added at a fixed cost per room. Turnkey adds a per-sq-ft fit-out allowance (cabinets, wardrobes, fixtures).</p>
 <h2>4. Optional extras</h2>
 <p>Boundary wall = running feet × wall rate for the quality tier, city-adjusted. Approval/NOC fee = plot size in Marla × editable fee per Marla (default PKR {$r['approvalPerMarla']}).</p>
 [hcc_methodology_tables]
@@ -363,7 +372,7 @@ HTML
 [hcc_embed_code]
 <h2>Terms</h2>
 <ul>
-<li>Free for any website. Please keep the "Powered by ConstructionCostPK" credit link visible under the widget.</li>
+<li>Free for any website. Please keep the "Powered by ConstructionCostPK" credit link (included in the code above) visible under the widget.</li>
 <li>The widget updates automatically whenever we update rates — you never need to change the code.</li>
 <li>Figures are planning estimates; see our <a href="{$u('disclaimer')}">disclaimer</a>.</li>
 </ul>
@@ -380,17 +389,18 @@ HTML
 function hcc_material_faq_items( $m ) {
 	$r = hcc_default_calc_rates();
 	$b = hcc_base_qty_per_sqft();
+	$g5 = hcc_estimate( 1125, 1, 'grey' ); $g5d = hcc_estimate( 1125, 2, 'grey' );
 	if ( 'steel' === $m ) {
 		return array(
 			array( 'q' => 'What is the saria rate per kg in Pakistan today?', 'a' => 'ConstructionCostPK uses a planning rate of PKR ' . number_format( $r['steel'] ) . ' per kg for Grade 60 steel (rates last updated ' . hcc_rates_date_human() . '). Mill and dealer prices change often and differ by brand and city, so confirm on the day you buy.' ),
-			array( 'q' => 'How much steel is needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( hcc_suggest_covered_area( 1125, 1 ) * $b['steelKg'] ) ) . ' kg for a single storey 5 Marla house of ' . number_format( hcc_suggest_covered_area( 1125, 1 ) ) . ' sq ft at standard quality (' . $b['steelKg'] . ' kg per sq ft). A double storey house needs roughly twice as much.' ),
+			array( 'q' => 'How much steel is needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( $g5['qty']['steelKg'] ) ) . ' kg for a single storey 5 Marla house of ' . number_format( $g5['covered'] ) . ' sq ft at standard quality (' . $b['steelKg'] . ' kg per sq ft). A double storey 5 Marla house (' . number_format( $g5d['covered'] ) . ' sq ft) needs about ' . number_format( round( $g5d['qty']['steelKg'] ) ) . ' kg.' ),
 			array( 'q' => 'Grade 40 or Grade 60 steel — which is better for a house?', 'a' => 'Grade 60 (about 420 MPa yield strength) is the standard for houses today and is what most structural drawings specify. Use the grade your structural engineer specifies.' ),
 			array( 'q' => 'Saria ka rate aaj kal kya hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['steel'] ) . ' per kg (Grade 60) hai. Asal rate brand aur sheher ke hisaab se badalta hai — khareedne se pehle dealer se aaj ka rate confirm karein.' ),
 		);
 	}
 	return array(
 		array( 'q' => 'What is the cement rate per bag in Pakistan today?', 'a' => 'ConstructionCostPK uses a planning rate of PKR ' . number_format( $r['cement'] ) . ' per 50 kg bag (rates last updated ' . hcc_rates_date_human() . '). Actual prices vary by brand, city and dealer, so ask two or three dealers for today\'s quote.' ),
-		array( 'q' => 'How many cement bags are needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( hcc_suggest_covered_area( 1125, 1 ) * $b['cementBags'] ) ) . ' bags for the grey structure of a single storey 5 Marla house (' . $b['cementBags'] . ' bags per sq ft of covered area at standard quality).' ),
+		array( 'q' => 'How many cement bags are needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( $g5['qty']['cementBags'] ) ) . ' bags for the grey structure of a single storey 5 Marla house (' . $b['cementBags'] . ' bags per sq ft of covered area at standard quality), or about ' . number_format( round( $g5d['qty']['cementBags'] ) ) . ' bags for a double storey one.' ),
 		array( 'q' => 'Which cement is best for foundations in salty soil?', 'a' => 'Sulphate-resisting cement (SRC) is normally recommended for foundations in soil or groundwater with high sulphate content, such as in parts of coastal Karachi. Follow your structural engineer\'s specification.' ),
 		array( 'q' => 'Cement ki bori ka rate kya hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['cement'] ) . ' per 50 kg bori hai. Brand aur sheher ke hisaab se asal qeemat alag hoti hai — dealer se aaj ka rate zaroor poochein.' ),
 	);
@@ -402,5 +412,5 @@ function hcc_material_faq_render( $m ) {
 	foreach ( $items as $i ) $main[] = array( '@type' => 'Question', 'name' => $i['q'], 'acceptedAnswer' => array( '@type' => 'Answer', 'text' => $i['a'] ) );
 	$schema = array( '@context' => 'https://schema.org', '@type' => 'FAQPage', '@id' => home_url( '/' . $slug . '/' ) . '#faq', 'inLanguage' => 'en-US', 'mainEntity' => $main );
 	return hcc_render_faq_custom( $items, 'Quick answers about ' . ( 'steel' === $m ? 'steel (saria)' : 'cement' ) . ' prices and quantities in Pakistan.' )
-		. '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES ) . '</script>';
+		. '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ) . '</script>';
 }

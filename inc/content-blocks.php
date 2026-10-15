@@ -73,7 +73,7 @@ function hcc_sc_city_rates( $atts ) {
 	$a = shortcode_atts( array( 'city' => 'lahore' ), $atts );
 	$labels = hcc_city_labels();
 	$label = isset( $labels[ $a['city'] ] ) ? $labels[ $a['city'] ] : 'Lahore';
-	return hcc_table( array( 'Construction type (' . esc_html( $label ) . ')', 'Cost per sq ft (2026)' ), hcc_city_rate_rows( $a['city'] ) )
+	return hcc_table( array( 'Construction type (' . esc_html( $label ) . ')', 'Cost per sq ft (' . esc_html( hcc_year() ) . ')' ), hcc_city_rate_rows( $a['city'] ) )
 		. '<p class="hint">1,000 sq ft single storey, typical design, calculator default material rates (' . esc_html( hcc_rates_date_human() ) . ').</p>';
 }
 add_shortcode( 'hcc_city_rates', 'hcc_sc_city_rates' );
@@ -125,7 +125,7 @@ function hcc_sc_city_table() {
 	foreach ( hcc_all_cities_rows() as $r ) {
 		$rows[] = array( $r['name'], hcc_pkr( $r['grey'] ), hcc_pkr( $r['complete'] ), hcc_pkr( $r['5m'] ) );
 	}
-	return hcc_table( array( 'City', 'Grey structure / sq ft', 'Complete house / sq ft', '5 Marla complete (956 sq ft)' ), $rows )
+	return hcc_table( array( 'City', 'Grey structure / sq ft', 'Complete house / sq ft', '5 Marla complete (' . number_format( hcc_suggest_covered_area( 1125, 1 ) ) . ' sq ft)' ), $rows )
 		. '<p class="hint">Standard quality, typical design. Rates last updated ' . esc_html( hcc_rates_date_human() ) . '. City differences come mainly from local labour rates and transport; see the <a href="' . esc_url( home_url( '/methodology/' ) ) . '">methodology</a>.</p>';
 }
 add_shortcode( 'hcc_city_table', 'hcc_sc_city_table' );
@@ -138,16 +138,7 @@ function hcc_sc_plot_tables( $atts ) {
 	$plot = (float) $a['marla'] * 225;
 	$st = max( 1, (int) $a['storeys'] );
 	if ( 'qty' === $a['part'] ) {
-		$cv = hcc_suggest_covered_area( $plot, $st );
-		$b = hcc_base_qty_per_sqft();
-		$rows = array(
-			array( 'Cement', number_format( round( $cv * $b['cementBags'] ) ) . ' bags' ),
-			array( 'Steel (saria)', number_format( round( $cv * $b['steelKg'] ) ) . ' kg' ),
-			array( 'Bricks', number_format( round( $cv * $b['bricks'] ) ) ),
-			array( 'Sand', number_format( round( $cv * $b['sandCft'] ) ) . ' cft' ),
-			array( 'Crush (aggregate)', number_format( round( $cv * $b['crushCft'] ) ) . ' cft' ),
-		);
-		return hcc_table( array( 'Material', 'Approx. quantity (' . number_format( $cv ) . ' sq ft)' ), $rows );
+		return hcc_qty_table( hcc_estimate( $plot, $st, 'grey' ) );
 	}
 	if ( 'storeys' === $a['part'] ) {
 		$rows = array();
@@ -172,6 +163,19 @@ add_shortcode( 'hcc_plot_tables', 'hcc_sc_plot_tables' );
  * Material-page tables (cement / steel) — quantities per plot size and the
  * budget impact of a price move. Uses the engine's quantity factors.
  * ------------------------------------------------------------------------ */
+/** Material quantity table for one estimate — quantities come from the engine. */
+function hcc_qty_table( $e ) {
+	$qt = $e['qty'];
+	$rows = array(
+		array( 'Cement', number_format( round( $qt['cementBags'] ) ) . ' bags' ),
+		array( 'Steel (saria)', number_format( round( $qt['steelKg'] ) ) . ' kg' ),
+		array( 'Bricks', number_format( round( $qt['bricks'] ) ) ),
+		array( 'Sand', number_format( round( $qt['sandCft'] ) ) . ' cft' ),
+		array( 'Crush (aggregate)', number_format( round( $qt['crushCft'] ) ) . ' cft' ),
+	);
+	return hcc_table( array( 'Material', 'Approx. quantity (' . number_format( $e['covered'] ) . ' sq ft)' ), $rows );
+}
+
 function hcc_std_plots() {
 	return array( array( '3 Marla', 675, 1 ), array( '5 Marla', 1125, 1 ), array( '7 Marla', 1575, 1 ), array( '10 Marla', 2250, 2 ), array( '1 Kanal', 4500, 2 ) );
 }
@@ -181,19 +185,20 @@ function hcc_sc_material_need( $atts ) {
 	$r = hcc_default_calc_rates();
 	$rows = array();
 	foreach ( hcc_std_plots() as $p ) {
-		$cv = hcc_suggest_covered_area( $p[1], $p[2] );
+		$e = hcc_estimate( $p[1], $p[2], 'grey' );
+		$cv = $e['covered'];
 		if ( 'steel' === $a['material'] ) {
-			$kg = round( $cv * $b['steelKg'] );
+			$kg = round( $e['qty']['steelKg'] );
 			$rows[] = array( esc_html( $p[0] ) . ( 2 === $p[2] ? ' (double storey)' : '' ), number_format( $cv ) . ' sq ft', number_format( $kg ) . ' kg (' . number_format( $kg / 1000, 1 ) . ' ton)', hcc_pkr( $kg * $r['steel'] ), hcc_pkr( $kg * 10 ) );
 		} else {
-			$bags = round( $cv * $b['cementBags'] );
+			$bags = round( $e['qty']['cementBags'] );
 			$rows[] = array( esc_html( $p[0] ) . ( 2 === $p[2] ? ' (double storey)' : '' ), number_format( $cv ) . ' sq ft', number_format( $bags ) . ' bags', hcc_pkr( $bags * $r['cement'] ), hcc_pkr( $bags * 100 ) );
 		}
 	}
 	$head = 'steel' === $a['material']
 		? array( 'House', 'Covered area', 'Steel needed', 'Cost at planning rate', 'Budget change per PKR 10/kg move' )
 		: array( 'House', 'Covered area', 'Cement needed', 'Cost at planning rate', 'Budget change per PKR 100/bag move' );
-	return hcc_table( $head, $rows ) . '<p class="hint">Standard quality, typical design; excludes the city factor and delivery. Quantities: ' . ( 'steel' === $a['material'] ? $b['steelKg'] . ' kg' : $b['cementBags'] . ' bags' ) . ' per sq ft of covered area — see the <a href="' . esc_url( home_url( '/methodology/' ) ) . '">methodology</a>.</p>';
+	return hcc_table( $head, $rows ) . '<p class="hint">Standard quality, typical design; excludes the city factor and delivery. Quantities: ' . ( 'steel' === $a['material'] ? $b['steelKg'] . ' kg' : $b['cementBags'] . ' bags' ) . ' per sq ft of covered area, plus 3% per storey above the ground floor — see the <a href="' . esc_url( home_url( '/methodology/' ) ) . '">methodology</a>.</p>';
 }
 add_shortcode( 'hcc_material_need', 'hcc_sc_material_need' );
 
@@ -251,17 +256,35 @@ function hcc_headline_figures() {
 /* --------------------------------------------------------------------------
  * O3.5 / T7.6 / L1.1–L1.4 / G9 — grey structure guide.
  * ------------------------------------------------------------------------ */
+/** Inline bar chart of grey structure cost per sq ft by city, from the engine (v1.9.0; replaces a static image with frozen prices). */
+function hcc_grey_city_chart_svg() {
+	$rates = array();
+	foreach ( hcc_city_labels() as $k => $label ) $rates[ $label ] = hcc_rate_per_sqft( 'grey', $k );
+	arsort( $rates );
+	$max = max( $rates );
+	$rowh = 30; $top = 10; $h = $top + count( $rates ) * $rowh + 26;
+	$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 ' . $h . '" width="600" height="' . $h . '" role="img" aria-labelledby="greyCityTitle"><title id="greyCityTitle">Grey structure cost per square foot in ' . count( $rates ) . ' Pakistani cities, ' . esc_html( hcc_rates_date_human() ) . ' default rates</title><g font-family="sans-serif" font-size="13">';
+	$y = $top;
+	foreach ( $rates as $label => $r ) {
+		$w = round( 330 * $r / $max );
+		$svg .= '<text x="0" y="' . ( $y + 15 ) . '" fill="#122c4a" font-weight="700">' . esc_html( $label ) . '</text>';
+		$svg .= '<rect x="110" y="' . $y . '" width="330" height="20" rx="4" fill="#eef2f8"/><rect x="110" y="' . $y . '" width="' . $w . '" height="20" rx="4" fill="#d79a2b"/>';
+		$svg .= '<text x="600" y="' . ( $y + 15 ) . '" text-anchor="end" fill="#122c4a" font-weight="700">PKR ' . esc_html( number_format( round( $r ) ) ) . '</text>';
+		$y += $rowh;
+	}
+	return $svg . '</g><text x="0" y="' . ( $h - 6 ) . '" font-family="sans-serif" font-size="11" fill="#8a94a3">Standard quality, 1,000 sq ft single storey, structure materials + labour, no finishing</text></svg>';
+}
+
 function hcc_variant_before_calculator( $variant ) {
 	if ( 'grey-structure' === $variant ) {
-		$img = get_template_directory_uri() . '/assets/img/grey-structure-cost-per-sq-ft-by-city.webp';
 		$rows = array();
 		foreach ( hcc_all_cities_rows() as $r ) $rows[] = array( $r['name'], hcc_pkr( $r['grey'] ) . ' / sq ft' );
 		ob_start(); ?>
 		<section class="static-page pre-calc"><div class="card">
-			<h2>Grey Structure Rates by City (2026)</h2>
+			<h2>Grey Structure Rates by City (<?php echo esc_html( hcc_year() ); ?>)</h2>
 			<?php echo hcc_table( array( 'City', 'Grey structure cost (standard)' ), $rows ); ?>
 			<figure class="illo">
-				<img src="<?php echo esc_url( $img ); ?>" alt="Bar chart of grey structure construction cost per square foot in 11 Pakistani cities for 2026, from about PKR <?php echo esc_attr( number_format( round( hcc_rate_per_sqft( 'grey', 'sargodha' ) ) ) ); ?> in Sargodha and Peshawar to about PKR <?php echo esc_attr( number_format( round( hcc_rate_per_sqft( 'grey', 'islamabad' ) ) ) ); ?> in Islamabad" width="1200" height="650" loading="lazy" decoding="async">
+				<?php echo hcc_grey_city_chart_svg(); // phpcs:ignore -- built from escaped engine numbers ?>
 				<figcaption>Grey structure cost per sq ft by city — standard quality, 1,000 sq ft single storey.</figcaption>
 			</figure>
 		</div></section>
@@ -285,7 +308,7 @@ function hcc_variant_after_calculator( $variant ) {
 	ob_start(); ?>
 	<section class="static-page guide-extra"><div class="card">
 		<h2>Grey Structure in Pakistan: The Complete Guide</h2>
-		<p>Grey structure (also called the "structure" or "dhancha" stage) is the part of a house that holds it up and closes it in: excavation, foundation, damp-proof course (DPC), columns, beams, roof slabs, brick walls and the staircase. Everything that makes the house liveable — plaster, flooring, paint, doors, windows, plumbing and electrical fittings — belongs to the finishing stage. At current calculator rates, grey structure costs about <strong><?php echo hcc_pkr( $g ); ?> per sq ft</strong> in Lahore at standard quality, roughly 60–65% of a complete house.</p>
+		<p>Grey structure (also called the "structure" or "dhancha" stage) is the part of a house that holds it up and closes it in: excavation, foundation, damp-proof course (DPC), columns, beams, roof slabs, brick walls and the staircase. Everything that makes the house liveable — plaster, flooring, paint, doors, windows, plumbing and electrical fittings — belongs to the finishing stage. At current calculator rates, grey structure costs about <strong><?php echo hcc_pkr( $g ); ?> per sq ft</strong> in Lahore at standard quality, about <?php echo esc_html( hcc_cost_shares()['grey_of_complete'] ); ?>% of a complete house.</p>
 
 		<h3>What is included in grey structure?</h3>
 		<ul>
@@ -365,7 +388,7 @@ function hcc_city_faq_items( $city ) {
 	$grey = hcc_rate_per_sqft( 'grey', $city );
 	$items = array(
 		array(
-			'q' => 'What is the construction cost per sq ft in ' . $L . ' in 2026?',
+			'q' => 'What is the construction cost per sq ft in ' . $L . ' in ' . hcc_year() . '?',
 			'a' => 'At standard quality, the calculator estimates about ' . hcc_format_pkr( $comp ) . ' per sq ft for a complete house and ' . hcc_format_pkr( $grey ) . ' per sq ft for grey structure in ' . $L . ' (rates last updated ' . hcc_rates_date_human() . '). Economy finishing is cheaper and premium finishing costs more — see the table on this page.',
 		),
 	);
@@ -393,7 +416,7 @@ function hcc_roman_urdu_faq_items( $variant ) {
 		$c = hcc_estimate( $s[1], $s[2] ); $g = hcc_estimate( $s[1], $s[2], 'grey' );
 		return array(
 			array( 'q' => ucfirst( $s[0] ) . ' ghar banane mein kitna kharcha aata hai?', 'a' => 'Lahore ke standard rates par ' . $s[0] . ' ka ' . ( 1 === $s[2] ? 'single storey' : 'double storey' ) . ' mukammal ghar taqreeban PKR ' . hcc_lakh_crore( $c['grandTotal'] ) . ' mein banta hai, aur sirf grey structure taqreeban PKR ' . hcc_lakh_crore( $g['grandTotal'] ) . ' mein. Apne sheher aur quality ke hisaab se upar wala calculator istemal karein.' ),
-			array( 'q' => ucfirst( $s[0] ) . ' ghar ke liye kitna cement aur saria chahiye?', 'a' => 'Taqreeban ' . number_format( round( $c['covered'] * 0.42 ) ) . ' bori cement aur ' . number_format( round( $c['covered'] * 3.6 ) ) . ' kg saria (standard quality, ' . number_format( $c['covered'] ) . ' sq ft covered area). Design aur quality ke saath yeh miqdaar badal sakti hai.' ),
+			array( 'q' => ucfirst( $s[0] ) . ' ghar ke liye kitna cement aur saria chahiye?', 'a' => 'Taqreeban ' . number_format( round( $g['qty']['cementBags'] ) ) . ' bori cement, ' . number_format( round( $g['qty']['steelKg'] ) ) . ' kg saria aur ' . number_format( round( $g['qty']['bricks'] ) ) . ' eentein (standard quality, ' . number_format( $c['covered'] ) . ' sq ft covered area). Design aur quality ke saath yeh miqdaar badal sakti hai.' ),
 		);
 	}
 	if ( 0 === strpos( $variant, 'city-' ) ) {
@@ -401,7 +424,7 @@ function hcc_roman_urdu_faq_items( $variant ) {
 		$labels = hcc_city_labels();
 		$L = isset( $labels[ $city ] ) ? $labels[ $city ] : 'Lahore';
 		return array(
-			array( 'q' => $L . ' mein ghar banane ka per square foot rate kya hai?', 'a' => $L . ' mein standard quality ka mukammal ghar taqreeban ' . hcc_format_pkr( hcc_rate_per_sqft( 'complete', $city ) ) . ' per sq ft aur grey structure taqreeban ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey', $city ) ) . ' per sq ft mein banta hai (2026).' ),
+			array( 'q' => $L . ' mein ghar banane ka per square foot rate kya hai?', 'a' => $L . ' mein standard quality ka mukammal ghar taqreeban ' . hcc_format_pkr( hcc_rate_per_sqft( 'complete', $city ) ) . ' per sq ft aur grey structure taqreeban ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey', $city ) ) . ' per sq ft mein banta hai (' . hcc_year() . ').' ),
 			array( 'q' => $L . ' mein naqsha (map) kahan se pass hota hai?', 'a' => 'Yeh aap ki society ya area par munhasir hai — sarkari authority ya society ka apna building control department. Fees aur rules pehle confirm kar lein.' ),
 		);
 	}
@@ -453,12 +476,21 @@ add_shortcode( 'hcc_methodology_tables', 'hcc_sc_methodology' );
  * the page renders in each month so month-on-month change is real history,
  * not a guess.
  * ------------------------------------------------------------------------ */
+/**
+ * v1.9.0: an edition is stored per month and tagged with the method version.
+ * If the engine's formulas change (HCC_ENGINE_VERSION), old months stay as
+ * history but the new method starts its own baseline, so a methodology change
+ * (such as the bricks fix) is never reported as month-on-month inflation.
+ * Within a month the edition is refreshed when the default rates change.
+ */
 function hcc_cost_index_snapshot() {
 	$month = gmdate( 'Y-m' );
 	$hist = get_option( 'hcc_cost_index_history', array() );
 	if ( ! is_array( $hist ) ) $hist = array();
-	if ( ! isset( $hist[ $month ] ) ) {
-		$snap = array( 'rates_date' => hcc_rates_date(), 'rates' => hcc_default_calc_rates(), 'cities' => array() );
+	$cur = isset( $hist[ $month ] ) ? $hist[ $month ] : null;
+	$stale = $cur && ( ( isset( $cur['method'] ) ? (int) $cur['method'] : 1 ) !== HCC_ENGINE_VERSION || $cur['rates'] != hcc_default_calc_rates() || $cur['rates_date'] !== hcc_rates_date() );
+	if ( ! $cur || $stale ) {
+		$snap = array( 'rates_date' => hcc_rates_date(), 'rates' => hcc_default_calc_rates(), 'method' => HCC_ENGINE_VERSION, 'cities' => array() );
 		foreach ( array_keys( hcc_city_labels() ) as $c ) {
 			$snap['cities'][ $c ] = array( 'grey' => round( hcc_rate_per_sqft( 'grey', $c ) ), 'complete' => round( hcc_rate_per_sqft( 'complete', $c ) ) );
 		}
@@ -472,8 +504,13 @@ function hcc_sc_cost_index() {
 	$hist = hcc_cost_index_snapshot();
 	$months = array_keys( $hist );
 	$cur_m = end( $months );
-	$prev_m = count( $months ) > 1 ? $months[ count( $months ) - 2 ] : null;
 	$cur = $hist[ $cur_m ];
+	$cur_meth = isset( $cur['method'] ) ? (int) $cur['method'] : 1;
+	// Only compare with an earlier edition made with the same method.
+	$same = array_values( array_filter( $months, function ( $m ) use ( $hist, $cur_meth ) {
+		return ( isset( $hist[ $m ]['method'] ) ? (int) $hist[ $m ]['method'] : 1 ) === $cur_meth;
+	} ) );
+	$prev_m = count( $same ) > 1 ? $same[ count( $same ) - 2 ] : null;
 	$prev = $prev_m ? $hist[ $prev_m ] : null;
 	$chg = function ( $now, $before ) {
 		if ( ! $before ) return 'baseline';
@@ -482,8 +519,9 @@ function hcc_sc_cost_index() {
 	};
 	$rows = array();
 	foreach ( hcc_city_labels() as $k => $l ) {
+		if ( ! isset( $cur['cities'][ $k ] ) ) continue;
 		$c = $cur['cities'][ $k ];
-		$p = $prev ? $prev['cities'][ $k ] : null;
+		$p = ( $prev && isset( $prev['cities'][ $k ] ) ) ? $prev['cities'][ $k ] : null;
 		$rows[] = array( esc_html( $l ), hcc_pkr( $c['grey'] ), esc_html( $chg( $c['grey'], $p ? $p['grey'] : 0 ) ), hcc_pkr( $c['complete'] ), esc_html( $chg( $c['complete'], $p ? $p['complete'] : 0 ) ) );
 	}
 	$label = date_i18n( 'F Y', strtotime( $cur_m . '-01' ) );
@@ -495,12 +533,13 @@ function hcc_sc_cost_index() {
 		array( 'Steel (per kg)', 'PKR ' . number_format( $r['steel'] ), esc_html( $chg( $r['steel'], $prev ? $prev['rates']['steel'] : 0 ) ) ),
 		array( 'Bricks (per 1,000)', 'PKR ' . number_format( $r['bricksPer1000'] ), esc_html( $chg( $r['bricksPer1000'], $prev ? $prev['rates']['bricksPer1000'] : 0 ) ) ),
 	) );
-	$out .= '<p class="hint">Edition: ' . esc_html( $label ) . ' · rates dated ' . esc_html( date_i18n( 'j F Y', strtotime( $cur['rates_date'] ) ) ) . ( $prev_m ? ' · compared with ' . esc_html( date_i18n( 'F Y', strtotime( $prev_m . '-01' ) ) ) : ' · first edition (baseline) — month-on-month change starts next month' ) . '.</p>';
+	$out .= '<p class="hint">Edition: ' . esc_html( $label ) . ' · rates dated ' . esc_html( date_i18n( 'j F Y', strtotime( $cur['rates_date'] ) ) ) . ( $prev_m ? ' · compared with ' . esc_html( date_i18n( 'F Y', strtotime( $prev_m . '-01' ) ) ) : ( count( $months ) > 1 ? ' · new baseline: the calculation method was updated (see the <a href="' . esc_url( home_url( '/methodology/' ) ) . '">methodology</a>), so month-on-month change restarts from this edition' : ' · first edition (baseline) — month-on-month change starts next month' ) ) . '.</p>';
 	if ( count( $months ) > 1 ) {
 		$out .= '<h2>Index history</h2>';
 		$hrows = array();
 		foreach ( array_reverse( $months ) as $m ) {
-			$hrows[] = array( esc_html( date_i18n( 'F Y', strtotime( $m . '-01' ) ) ), hcc_pkr( $hist[ $m ]['cities']['lahore']['complete'] ), hcc_pkr( $hist[ $m ]['cities']['karachi']['complete'] ), hcc_pkr( $hist[ $m ]['cities']['islamabad']['complete'] ) );
+			$old_method = ( isset( $hist[ $m ]['method'] ) ? (int) $hist[ $m ]['method'] : 1 ) !== $cur_meth;
+			$hrows[] = array( esc_html( date_i18n( 'F Y', strtotime( $m . '-01' ) ) ) . ( $old_method ? ' (earlier method)' : '' ), hcc_pkr( $hist[ $m ]['cities']['lahore']['complete'] ), hcc_pkr( $hist[ $m ]['cities']['karachi']['complete'] ), hcc_pkr( $hist[ $m ]['cities']['islamabad']['complete'] ) );
 		}
 		$out .= hcc_table( array( 'Month', 'Lahore', 'Karachi', 'Islamabad' ), $hrows );
 	}
@@ -513,7 +552,7 @@ add_shortcode( 'hcc_cost_index', 'hcc_sc_cost_index' );
  * ------------------------------------------------------------------------ */
 function hcc_sc_embed_code() {
 	$src = home_url( '/?hcc_embed=calculator' );
-	$code = '<iframe src="' . esc_url( $src ) . '" width="100%" height="1500" style="border:0;max-width:960px" loading="lazy" title="House Construction Cost Calculator Pakistan"></iframe>' . "\n" . '<p style="font-size:13px">Calculator by <a href="' . esc_url( home_url( '/' ) ) . '">ConstructionCostPK — House Construction Cost Calculator</a></p>';
+	$code = '<iframe src="' . esc_url( $src ) . '" width="100%" height="1500" style="border:0;max-width:960px" loading="lazy" title="House Construction Cost Calculator Pakistan"></iframe>' . "\n" . '<p style="font-size:13px">Powered by <a href="' . esc_url( home_url( '/' ) ) . '">ConstructionCostPK — House Construction Cost Calculator</a></p>';
 	return '<label for="hcc-embed-code"><strong>Copy this code into your page (HTML view):</strong></label><textarea id="hcc-embed-code" class="embed-code" rows="5" readonly onclick="this.select()">' . esc_textarea( $code ) . '</textarea>'
 		. '<p><a class="btn btn-secondary" href="' . esc_url( $src ) . '" target="_blank" rel="noopener">Preview the widget</a></p>';
 }

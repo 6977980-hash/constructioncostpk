@@ -29,8 +29,17 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * the interactive calculator changes for a human visitor.
  * ========================================================================== */
 
+/**
+ * v1.9.0 — engine version. Bump whenever a formula or quantity factor changes
+ * (not when only a rate changes) so the cost index starts a new baseline
+ * instead of reporting a methodology change as price inflation.
+ */
+define( 'HCC_ENGINE_VERSION', 2 );
+
 function hcc_base_qty_per_sqft() {
-	return array( 'cementBags' => 0.42, 'steelKg' => 3.6, 'bricks' => 8.0, 'sandCft' => 1.1, 'crushCft' => 0.85 );
+	// v1.9.0: bricks 8 → 27 per sq ft of covered area (a 9-inch outer wall +
+	// 4.5-inch partitions take-off is about 25–30 bricks per sq ft).
+	return array( 'cementBags' => 0.42, 'steelKg' => 3.6, 'bricks' => 27.0, 'sandCft' => 1.1, 'crushCft' => 0.85 );
 }
 function hcc_quality_table() {
 	return array(
@@ -66,23 +75,38 @@ function hcc_room_unit_cost() {
 	);
 }
 
+/**
+ * Ground coverage ratio for a plot. v1.9.0: interpolated between the old
+ * step values so a bigger plot can never get less covered area than a
+ * smaller one (the steps made 1,351 sq ft get less area than 1,350).
+ * 3/4/5 Marla 85%, 7 and 10 Marla 75%, 1 Kanal 65%, 2 Kanal+ 55%.
+ */
+function hcc_coverage_ratio( $plot_sqft ) {
+	if ( $plot_sqft <= 1125 ) return 0.85;
+	if ( $plot_sqft <= 1575 ) return 0.85 - ( $plot_sqft - 1125 ) / 450 * 0.10;
+	if ( $plot_sqft <= 2250 ) return 0.75;
+	if ( $plot_sqft <= 4500 ) return 0.75 - ( $plot_sqft - 2250 ) / 2250 * 0.10;
+	if ( $plot_sqft <= 9000 ) return 0.65 - ( $plot_sqft - 4500 ) / 4500 * 0.10;
+	return 0.55;
+}
 function hcc_suggest_covered_area( $plot_sqft, $storeys ) {
-	if ( $plot_sqft <= 1350 ) { $ratio = 0.85; }
-	elseif ( $plot_sqft <= 2250 ) { $ratio = 0.75; }
-	elseif ( $plot_sqft <= 4500 ) { $ratio = 0.65; }
-	else { $ratio = 0.55; }
-	return round( $plot_sqft * $ratio * $storeys );
+	return round( max( 0, $plot_sqft ) * hcc_coverage_ratio( $plot_sqft ) * max( 1, $storeys ) );
 }
 
 /**
  * Mirrors computeEstimate() in assets/js/calculator.js line-for-line. Keep
  * both in sync if the pricing model ever changes.
+ *
+ * v1.9.0 changes: storey factor applied to quantities (so quantity × rate
+ * equals the line cost); the city material factor applies only to rates that
+ * are still the defaults (a rate the visitor typed is their own local quote);
+ * basement area adds to quantities, finishing area and the per-sq-ft divisor.
  */
 function hcc_compute_estimate( $in ) {
-	$covered_area   = max( 0, $in['coveredArea'] );
-	$storeys        = max( 1, $in['storeys'] );
+	$covered_area   = max( 0, (float) $in['coveredArea'] );
+	$storeys        = max( 1, (int) $in['storeys'] );
 	$has_basement   = ! empty( $in['hasBasement'] );
-	$basement_area  = $has_basement ? max( 0, $in['basementArea'] ) : 0;
+	$basement_area  = $has_basement ? max( 0, (float) $in['basementArea'] ) : 0;
 	$construction_type = $in['constructionType'];
 
 	$qtable = hcc_quality_table();
@@ -95,21 +119,30 @@ function hcc_compute_estimate( $in ) {
 	$mat_city_factor = 1 + ( $city_factor - 1 ) * 0.35;
 	$storey_factor   = 1 + max( 0, $storeys - 1 ) * 0.03;
 	$complexity_labour_factor = $storey_factor * $dc['labourFactor'];
-	$rates = $in['rates'];
+	$defaults = hcc_default_calc_rates();
+	$rates = array();
+	foreach ( array( 'cement', 'steel', 'bricksPer1000', 'sand', 'crush', 'approvalPerMarla' ) as $k ) {
+		$rates[ $k ] = isset( $in['rates'][ $k ] ) ? max( 0, (float) $in['rates'][ $k ] ) : $defaults[ $k ];
+	}
+	// City material factor only on rates left at their default value.
+	$mrate = function ( $k ) use ( $rates, $defaults, $mat_city_factor ) {
+		return abs( $rates[ $k ] - $defaults[ $k ] ) < 0.0001 ? $rates[ $k ] * $mat_city_factor : $rates[ $k ];
+	};
 	$base  = hcc_base_qty_per_sqft();
+	$qf    = $covered_area * $q['qtyFactor'] * $dc['qtyBump'] * $storey_factor;
 
 	$qty = array(
-		'cementBags' => $covered_area * $base['cementBags'] * $q['qtyFactor'] * $dc['qtyBump'],
-		'steelKg'    => $covered_area * $base['steelKg'] * $q['qtyFactor'] * $dc['qtyBump'],
-		'bricks'     => $covered_area * $base['bricks'] * $q['qtyFactor'] * $dc['qtyBump'],
-		'sandCft'    => $covered_area * $base['sandCft'] * $q['qtyFactor'] * $dc['qtyBump'],
-		'crushCft'   => $covered_area * $base['crushCft'] * $q['qtyFactor'] * $dc['qtyBump'],
+		'cementBags' => $qf * $base['cementBags'],
+		'steelKg'    => $qf * $base['steelKg'],
+		'bricks'     => $qf * $base['bricks'],
+		'sandCft'    => $qf * $base['sandCft'],
+		'crushCft'   => $qf * $base['crushCft'],
 	);
 
-	$item_cement      = $qty['cementBags'] * $rates['cement'] * $mat_city_factor * $storey_factor;
-	$item_steel       = $qty['steelKg'] * $rates['steel'] * $mat_city_factor * $storey_factor;
-	$item_bricks      = $qty['bricks'] * ( $rates['bricksPer1000'] / 1000 ) * $mat_city_factor * $storey_factor;
-	$item_sand_crush  = ( $qty['sandCft'] * $rates['sand'] + $qty['crushCft'] * $rates['crush'] ) * $mat_city_factor * $storey_factor;
+	$item_cement      = $qty['cementBags'] * $mrate( 'cement' );
+	$item_steel       = $qty['steelKg'] * $mrate( 'steel' );
+	$item_bricks      = $qty['bricks'] * ( $mrate( 'bricksPer1000' ) / 1000 );
+	$item_sand_crush  = $qty['sandCft'] * $mrate( 'sand' ) + $qty['crushCft'] * $mrate( 'crush' );
 	$item_structure_labour = $covered_area * $q['greyLabour'] * $city_factor * $complexity_labour_factor;
 
 	$grey_structure_cost = $item_cement + $item_steel + $item_bricks + $item_sand_crush + $item_structure_labour;
@@ -117,12 +150,17 @@ function hcc_compute_estimate( $in ) {
 	$basement_cost = $has_basement ? $basement_area * $grey_rate_per_sqft * 1.45 : 0;
 	$grey_structure_subtotal = $grey_structure_cost + $basement_cost;
 
+	// Basement material quantities, in proportion to its share of grey cost.
+	$basement_qty_factor = $covered_area > 0 ? 1 + ( $basement_area * 1.45 ) / $covered_area : 1;
+	foreach ( $qty as $k => $v ) $qty[ $k ] = $v * $basement_qty_factor;
+
+	$finish_area = $covered_area + $basement_area;
 	$item_tiles = $item_plumbing = $item_electrical = $item_paint = $item_woodwork = $item_misc_finish = $item_finish_labour = $item_room_extras = 0;
 	$finishing_subtotal = 0;
 
 	if ( 'complete' === $construction_type || 'turnkey' === $construction_type ) {
-		$finish_material_total = $covered_area * $q['finishRate'] * ( 1 - $q['finishLabourShare'] ) * $mat_city_factor;
-		$finish_labour_total   = $covered_area * $q['finishRate'] * $q['finishLabourShare'] * $city_factor * $dc['labourFactor'];
+		$finish_material_total = $finish_area * $q['finishRate'] * ( 1 - $q['finishLabourShare'] ) * $mat_city_factor;
+		$finish_labour_total   = $finish_area * $q['finishRate'] * $q['finishLabourShare'] * $city_factor * $dc['labourFactor'];
 		$split = hcc_finish_material_split();
 
 		$item_tiles       = $finish_material_total * $split['tiles'];
@@ -133,9 +171,9 @@ function hcc_compute_estimate( $in ) {
 		$item_misc_finish = $finish_material_total * $split['misc'];
 		$item_finish_labour = $finish_labour_total;
 
-		$baseline_bathrooms = max( 1, (int) ceil( $in['bedrooms'] / 2 ) );
-		$extra_bathrooms = max( 0, $in['bathrooms'] - $baseline_bathrooms );
-		$extra_kitchens  = max( 0, $in['kitchens'] - 1 );
+		$baseline_bathrooms = max( 1, (int) ceil( max( 0, (int) $in['bedrooms'] ) / 2 ) );
+		$extra_bathrooms = max( 0, (int) $in['bathrooms'] - $baseline_bathrooms );
+		$extra_kitchens  = max( 0, (int) $in['kitchens'] - 1 );
 		$kitchen_factor  = 'turnkey' === $construction_type ? 1 : 0.5;
 		$room_cost_table = hcc_room_unit_cost();
 		$room_cost = isset( $room_cost_table[ $in['quality'] ] ) ? $room_cost_table[ $in['quality'] ] : $room_cost_table['standard'];
@@ -144,23 +182,43 @@ function hcc_compute_estimate( $in ) {
 		$finishing_subtotal = $item_tiles + $item_plumbing + $item_electrical + $item_paint + $item_woodwork + $item_misc_finish + $item_finish_labour + $item_room_extras;
 	}
 
-	$item_turnkey = 'turnkey' === $construction_type ? $covered_area * $q['turnkeyRate'] * $city_factor * $dc['labourFactor'] : 0;
+	$item_turnkey = 'turnkey' === $construction_type ? $finish_area * $q['turnkeyRate'] * $city_factor * $dc['labourFactor'] : 0;
 
 	$has_wall    = ! empty( $in['hasBoundaryWall'] );
-	$wall_length = $has_wall ? max( 0, $in['wallLength'] ) : 0;
+	$wall_length = $has_wall ? max( 0, (float) $in['wallLength'] ) : 0;
 	$item_boundary_wall = $has_wall ? $wall_length * $q['wallRatePerRft'] * ( ( $mat_city_factor * 0.62 ) + ( $city_factor * 0.38 ) ) : 0;
 
 	$has_approval = ! empty( $in['hasApprovalFee'] );
-	$plot_marla   = $in['plotSqft'] > 0 ? $in['plotSqft'] / 225 : 0;
-	$item_approval_fee = $has_approval ? $plot_marla * ( isset( $rates['approvalPerMarla'] ) ? $rates['approvalPerMarla'] : 0 ) : 0;
+	$marla_to_sqft = ! empty( $in['marlaToSqft'] ) && $in['marlaToSqft'] > 0 ? (float) $in['marlaToSqft'] : 225;
+	$plot_marla   = $in['plotSqft'] > 0 ? $in['plotSqft'] / $marla_to_sqft : 0;
+	$item_approval_fee = $has_approval ? $plot_marla * $rates['approvalPerMarla'] : 0;
 
 	$grand_total   = $grey_structure_subtotal + $finishing_subtotal + $item_turnkey + $item_boundary_wall + $item_approval_fee;
-	$cost_per_sqft = $covered_area > 0 ? ( $grey_structure_subtotal + $finishing_subtotal + $item_turnkey ) / $covered_area : 0;
+	$cost_per_sqft = $finish_area > 0 ? ( $grey_structure_subtotal + $finishing_subtotal + $item_turnkey ) / $finish_area : 0;
+
+	$material_cost_total = $item_cement + $item_steel + $item_bricks + $item_sand_crush
+		+ $item_tiles + $item_plumbing + $item_electrical + $item_paint + $item_woodwork + $item_misc_finish
+		+ $basement_cost * 0.65 + $item_turnkey * 0.55 + $item_room_extras * 0.60 + $item_boundary_wall * 0.62;
+	$labour_cost_total = $item_structure_labour + $item_finish_labour
+		+ $basement_cost * 0.35 + $item_turnkey * 0.45 + $item_room_extras * 0.40 + $item_boundary_wall * 0.38 + $item_approval_fee;
 
 	return array(
 		'coveredArea' => $covered_area,
 		'grandTotal'  => $grand_total,
 		'costPerSqft' => $cost_per_sqft,
+		'greyStructureSubtotal' => $grey_structure_subtotal,
+		'finishingSubtotal' => $finishing_subtotal,
+		'turnkeyAddon' => $item_turnkey,
+		'materialCostTotal' => $material_cost_total,
+		'labourCostTotal' => $labour_cost_total,
+		'items' => array(
+			'cement' => $item_cement, 'steel' => $item_steel, 'bricks' => $item_bricks, 'sandCrush' => $item_sand_crush,
+			'structureLabour' => $item_structure_labour, 'basement' => $basement_cost,
+			'tiles' => $item_tiles, 'plumbing' => $item_plumbing, 'electrical' => $item_electrical, 'paint' => $item_paint,
+			'woodwork' => $item_woodwork, 'miscFinish' => $item_misc_finish, 'finishLabour' => $item_finish_labour,
+			'roomExtras' => $item_room_extras, 'turnkey' => $item_turnkey, 'boundaryWall' => $item_boundary_wall, 'approvalFee' => $item_approval_fee,
+		),
+		'qty' => $qty,
 	);
 }
 
@@ -168,8 +226,127 @@ function hcc_format_pkr( $n ) {
 	return 'PKR ' . number_format( round( $n ) );
 }
 
+/**
+ * Default material rates — the ONE source for every page, the calculator's
+ * form fields and calculator.js (passed in window.hccCalc.rates).
+ * v1.9.0 (reviewed 15 Oct 2026): steel 280 → 275 per kg (dealer lists 260–277
+ * for Grade 60 in Oct 2026, plus wastage and binding wire); cement 1,500 per
+ * bag (Aug–Oct 2026 lists 1,375–1,610); bricks 20,000 per 1,000 (18,000–22,000).
+ */
 function hcc_default_calc_rates() {
-	return array( 'cement' => 1500, 'steel' => 280, 'bricksPer1000' => 20000, 'sand' => 90, 'crush' => 130, 'approvalPerMarla' => 18000 );
+	return array( 'cement' => 1500, 'steel' => 275, 'bricksPer1000' => 20000, 'sand' => 90, 'crush' => 130, 'approvalPerMarla' => 18000 );
+}
+
+/** Allowed values of the shortcode's variant attribute. */
+function hcc_sanitize_variant( $variant ) {
+	$variant = (string) $variant;
+	$allowed = array( 'grey-structure', 'marla-standards', 'embed', '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal' );
+	foreach ( array_keys( hcc_city_labels() ) as $c ) $allowed[] = 'city-' . $c;
+	return in_array( $variant, $allowed, true ) ? $variant : 'grey-structure';
+}
+/** Plot preset per page: array( size, unit, storeys ). */
+function hcc_calculator_preset( $variant ) {
+	$presets = array(
+		'3-marla' => array( 3, 'marla', 1 ), '4-marla' => array( 4, 'marla', 1 ), '5-marla' => array( 5, 'marla', 1 ),
+		'7-marla' => array( 7, 'marla', 1 ), '10-marla' => array( 10, 'marla', 2 ), '1-kanal' => array( 1, 'kanal', 2 ),
+		// Karachi plots are sold in square yards; most 120 sq yd houses are ground + 1.
+		'city-karachi' => array( 120, 'sqyd', 2 ),
+		// Islamabad CDA plots are named by dimensions; 30×60 ft is the common size.
+		'city-islamabad' => array( 1800, 'sqft', 2 ),
+	);
+	return isset( $presets[ $variant ] ) ? $presets[ $variant ] : array( 5, 'marla', 1 );
+}
+function hcc_preset_plot_sqft( $preset ) {
+	switch ( $preset[1] ) {
+		case 'marla': return $preset[0] * 225;
+		case 'kanal': return $preset[0] * 4500;
+		case 'sqyd':  return $preset[0] * 9;
+	}
+	return (float) $preset[0];
+}
+/** Same text calculator.js writes into #plot-sqft-hint, so non-JS crawlers see the right value. */
+function hcc_plot_hint_text( $preset ) {
+	$notes = array( 'marla' => ' (1 Marla = 225 sq ft)', 'kanal' => ' (1 Kanal = 4,500 sq ft)', 'sqyd' => ' (1 sq yd = 9 sq ft)', 'sqft' => '' );
+	return '= ' . number_format( hcc_preset_plot_sqft( $preset ) ) . ' sq ft' . $notes[ $preset[1] ];
+}
+/**
+ * Per-sq-ft bands quoted in prose, computed from the engine so the text can
+ * never fall outside what the calculator itself produces. Low end = cheapest
+ * city, high end = most expensive city (1,000 sq ft single storey, typical
+ * design, default rates), rounded to the nearest PKR 50.
+ */
+function hcc_price_bands() {
+	static $cache = null;
+	if ( null !== $cache ) return $cache;
+	$specs = array(
+		'grey'     => array( array( 'grey', 'economy' ), array( 'grey', 'premium' ) ),
+		'economy'  => array( array( 'complete', 'economy' ), array( 'complete', 'economy' ) ),
+		'standard' => array( array( 'complete', 'standard' ), array( 'complete', 'standard' ) ),
+		'premium'  => array( array( 'complete', 'premium' ), array( 'complete', 'premium' ) ),
+		'luxury'   => array( array( 'complete', 'luxury' ), array( 'complete', 'luxury' ) ),
+		'turnkey'  => array( array( 'turnkey', 'standard' ), array( 'turnkey', 'luxury' ) ),
+	);
+	$cities = array_keys( hcc_city_labels() );
+	$cache = array();
+	foreach ( $specs as $k => $sp ) {
+		$lo = INF; $hi = 0;
+		foreach ( $cities as $c ) {
+			$lo = min( $lo, hcc_rate_per_sqft( $sp[0][0], $c, $sp[0][1] ) );
+			$hi = max( $hi, hcc_rate_per_sqft( $sp[1][0], $c, $sp[1][1] ) );
+		}
+		$cache[ $k ] = array( (int) ( round( $lo / 50 ) * 50 ), (int) ( round( $hi / 50 ) * 50 ) );
+	}
+	return $cache;
+}
+/** Material and labour shares of a standard Lahore house, from the engine. */
+function hcc_cost_shares() {
+	$g = hcc_estimate( 0, 1, 'grey', 'standard', 'lahore', 1000 );
+	$c = hcc_estimate( 0, 1, 'complete', 'standard', 'lahore', 1000 );
+	$q = hcc_quality_table();
+	$grey_mat = ( $g['items']['cement'] + $g['items']['steel'] + $g['items']['bricks'] + $g['items']['sandCrush'] ) / $g['greyStructureSubtotal'];
+	return array(
+		'grey_material' => (int) round( $grey_mat * 100 ),
+		'finish_labour' => (int) round( $q['standard']['finishLabourShare'] * 100 ),
+		'total_material' => (int) round( $c['materialCostTotal'] / $c['grandTotal'] * 100 ),
+		'grey_of_complete' => (int) round( $g['grandTotal'] / $c['grandTotal'] * 100 ),
+	);
+}
+/** PKR 3,050 → "3.05k" style labels for the inline chart. */
+function hcc_k( $n ) {
+	return hcc_trim_number( number_format( $n / 1000, 2 ) ) . 'k';
+}
+/** Inline cost-per-sq-ft chart (replaces a static SVG whose numbers went stale). */
+function hcc_cost_chart_svg() {
+	$b = hcc_price_bands();
+	$bars = array( 'grey' => array( 'Grey', '#9aa6b6' ), 'economy' => array( 'Economy', '#7fa0e8' ), 'standard' => array( 'Standard', '#1558d6' ), 'premium' => array( 'Premium', '#0d3ea1' ), 'turnkey' => array( 'Turnkey', '#b9720f' ) );
+	$max = $b['turnkey'][1];
+	$x = 45;
+	$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 170" width="520" height="170" role="img" aria-labelledby="costChartTitle"><title id="costChartTitle">Construction cost per square foot in Pakistan by quality tier, ' . esc_html( hcc_year() ) . ' (PKR, cheapest to most expensive city)</title><line x1="40" y1="140" x2="510" y2="140" stroke="#c7cedb" stroke-width="1.5"/><g font-family="sans-serif" font-size="10.5" fill="#556070">';
+	foreach ( $bars as $k => $bar ) {
+		$h = max( 10, round( 105 * $b[ $k ][1] / $max ) );
+		$svg .= '<rect x="' . $x . '" y="' . ( 140 - $h ) . '" width="60" height="' . $h . '" fill="' . $bar[1] . '"/>';
+		$svg .= '<text x="' . ( $x + 30 ) . '" y="153" text-anchor="middle">' . esc_html( $bar[0] ) . '</text>';
+		$svg .= '<text x="' . ( $x + 30 ) . '" y="' . ( 134 - $h ) . '" text-anchor="middle" font-weight="700">' . esc_html( hcc_k( $b[ $k ][0] ) . '–' . hcc_k( $b[ $k ][1] ) ) . '</text>';
+		$x += 85;
+	}
+	return $svg . '</g><text x="260" y="14" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#8a94a3">PKR per sq ft (' . esc_html( hcc_rates_date_human() ) . ' rates)</text></svg>';
+}
+/** Inline material-vs-labour donuts, from hcc_cost_shares(). */
+function hcc_material_labour_svg() {
+	$s = hcc_cost_shares();
+	$circ = 2 * M_PI * 55;
+	$donut = function ( $cx, $pct, $col, $bg, $label, $caption ) use ( $circ ) {
+		return '<g transform="translate(' . $cx . ',75)"><circle r="55" fill="none" stroke="' . $bg . '" stroke-width="22"/><circle r="55" fill="none" stroke="' . $col . '" stroke-width="22" stroke-dasharray="' . round( $circ * $pct / 100 ) . ' 350" transform="rotate(-90)"/><text y="6" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="800" fill="#122c4a">' . esc_html( $label ) . '</text></g><text x="' . $cx . '" y="145" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#556070" font-weight="700">' . esc_html( $caption ) . '</text>';
+	};
+	$fm = 100 - $s['finish_labour'];
+	return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" role="img" aria-labelledby="matLabTitle"><title id="matLabTitle">Material versus labour cost: about ' . $s['grey_material'] . '% material in grey structure and ' . $fm . '% in finishing</title>'
+		. $donut( 80, $s['grey_material'], '#1558d6', '#eaf1ff', $s['grey_material'] . '/' . ( 100 - $s['grey_material'] ), 'Grey Structure' )
+		. $donut( 300, $fm, '#b9720f', '#fbf0dd', $fm . '/' . $s['finish_labour'], 'Finishing' ) . '</svg>';
+}
+
+/** Pages whose own content opens with a "Quick answer" box. */
+function hcc_variant_has_own_quick_answer( $variant ) {
+	return in_array( $variant, array( '3-marla', '4-marla', '5-marla', '7-marla', '10-marla', '1-kanal' ), true ) || 0 === strpos( $variant, 'city-' );
 }
 
 /**
@@ -204,14 +381,23 @@ function hcc_render_examples_table_static() {
 }
 
 function hcc_faq_items() {
+	$y = hcc_year();
+	$q = hcc_quality_table();
+	$b = hcc_base_qty_per_sqft();
+	$bands = hcc_price_bands();
+	$band = function ( $k ) use ( $bands ) { return 'PKR ' . number_format( $bands[ $k ][0] ) . '–' . number_format( $bands[ $k ][1] ); };
+	$e5s = hcc_estimate( 1125, 1 ); $e5e = hcc_estimate( 1125, 1, 'complete', 'economy' ); $e5p = hcc_estimate( 1125, 1, 'complete', 'premium' ); $e5d = hcc_estimate( 1125, 2 );
+	$e10s = hcc_estimate( 2250, 2 ); $e10e = hcc_estimate( 2250, 2, 'complete', 'economy' ); $e10p = hcc_estimate( 2250, 2, 'complete', 'premium' );
+	$f = hcc_estimate( 0, 1, 'complete', 'standard', 'lahore', 1000 );
+	$fin = function ( $k ) use ( $f ) { return 'PKR ' . number_format( round( $f['items'][ $k ] / 1000, -1 ) ); };
 	return array(
 		array(
-			'q' => 'How much does it cost to build a house in Pakistan in 2026?',
-			'a' => 'Most complete (structure plus finishing) houses in Pakistan\'s major cities cost roughly PKR 3,000 to PKR 5,500 per square foot in 2026, depending on city, quality level and design. A grey-structure-only build typically costs PKR 1,800 to PKR 3,000 per square foot. The exact figure depends on plot size, number of storeys, finishing standard and current material rates, which is why an itemized house construction cost calculator is more reliable than a single flat number.',
+			'q' => 'How much does it cost to build a house in Pakistan in ' . $y . '?',
+			'a' => 'At ' . $y . ' planning rates, a complete (structure plus finishing) house in Pakistan\'s major cities costs roughly ' . $band( 'economy' ) . ' per square foot at economy quality, ' . $band( 'standard' ) . ' at standard quality and ' . $band( 'premium' ) . ' at premium quality, depending on city. A grey-structure-only build costs ' . $band( 'grey' ) . ' per square foot. The exact figure depends on plot size, number of storeys, finishing standard and current material rates, which is why an itemized house construction cost calculator is more reliable than a single flat number.',
 		),
 		array(
 			'q' => 'What is the construction cost per square foot in Pakistan?',
-			'a' => 'Construction cost per square foot in Pakistan usually falls into three broad bands: economy (around PKR 2,600–3,300), standard (around PKR 3,300–4,300) and premium to luxury (PKR 4,500–8,500+), for complete house construction. Grey structure alone is lower, typically PKR 1,800–3,000 per square foot. Rates vary by city, with Islamabad and Lahore generally higher than smaller cities.',
+			'a' => 'For complete house construction, cost per square foot in Pakistan falls into four bands in this calculator: economy (' . $band( 'economy' ) . '), standard (' . $band( 'standard' ) . '), premium (' . $band( 'premium' ) . ') and turnkey, which adds fit-outs (' . $band( 'turnkey' ) . '). Grey structure alone is ' . $band( 'grey' ) . ' per square foot. The low end of each band is the cheapest city (such as Peshawar or Sargodha) and the high end is Islamabad; the bands are for a 1,000 sq ft single storey house at our ' . hcc_rates_date_human() . ' rates.',
 		),
 		array(
 			'q' => 'What is the difference between grey structure and complete house construction?',
@@ -219,15 +405,15 @@ function hcc_faq_items() {
 		),
 		array(
 			'q' => 'How much does a 5 Marla house cost to construct?',
-			'a' => 'A 5 Marla (1,125 sq ft plot) house with a single storey and around 950 sq ft of covered area typically costs roughly PKR 3 million at economy quality, around PKR 4 million at standard quality, and up to PKR 5.5 million or more at premium quality for complete house construction in 2026. A double-storey 5 Marla house with more covered area will cost proportionately more. Grey structure only would be considerably less. Use the calculator above for a figure based on your exact plot, city and quality preference — completely free and with no sign-up required — or see our <a href="' . esc_url( home_url( '/5-marla-house-construction-cost/' ) ) . '">full 5 Marla cost breakdown</a>.',
+			'a' => 'A 5 Marla (1,125 sq ft plot) house built single storey, with about ' . number_format( $e5s['covered'] ) . ' sq ft of covered area, costs roughly PKR ' . hcc_lakh_crore( $e5e['grandTotal'] ) . ' at economy quality, PKR ' . hcc_lakh_crore( $e5s['grandTotal'] ) . ' at standard quality and PKR ' . hcc_lakh_crore( $e5p['grandTotal'] ) . ' at premium quality for a complete house in Lahore. Built double storey (about ' . number_format( $e5d['covered'] ) . ' sq ft), a standard-quality 5 Marla house costs about PKR ' . hcc_lakh_crore( $e5d['grandTotal'] ) . '. Use the calculator above for a figure based on your exact plot, city and quality preference — completely free and with no sign-up required — or see our <a href="' . esc_url( home_url( '/5-marla-house-construction-cost/' ) ) . '">full 5 Marla cost breakdown</a>.',
 		),
 		array(
 			'q' => 'How much does a 10 Marla house cost to construct?',
-			'a' => 'A 10 Marla (2,250 sq ft plot) house built as a double storey, with roughly 3,300–3,400 sq ft of covered area, generally costs between about PKR 11 million (economy quality) and PKR 19 million (premium quality) in 2026, with a standard-quality complete build costing around PKR 14 million. Exact cost depends on city, design and finishing choices — our <a href="' . esc_url( home_url( '/10-marla-house-construction-cost/' ) ) . '">10 Marla house cost guide</a> has the full breakdown.',
+			'a' => 'A 10 Marla (2,250 sq ft plot) house built as a double storey, with about ' . number_format( $e10s['covered'] ) . ' sq ft of covered area, costs about PKR ' . hcc_lakh_crore( $e10e['grandTotal'] ) . ' at economy quality, PKR ' . hcc_lakh_crore( $e10s['grandTotal'] ) . ' at standard quality and PKR ' . hcc_lakh_crore( $e10p['grandTotal'] ) . ' at premium quality for a complete house in Lahore. Exact cost depends on city, design and finishing choices — our <a href="' . esc_url( home_url( '/10-marla-house-construction-cost/' ) ) . '">10 Marla house cost guide</a> has the full breakdown.',
 		),
 		array(
 			'q' => 'What is the grey structure cost per square foot in Lahore, Karachi and Islamabad right now?',
-			'a' => 'Grey structure cost per square foot moves with cement, steel and local labour rates, so rather than quote one fixed number for every city, this calculator applies an editable city factor — Islamabad currently runs a little higher than Lahore, with Karachi close to Lahore and smaller cities somewhat lower. Select your city above and use the quick-answer strip or the calculator itself for a current, city-adjusted grey structure cost per square foot and complete house construction cost per square foot.',
+			'a' => 'At standard quality, grey structure costs about ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey', 'lahore' ) ) . ' per sq ft in Lahore, ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey', 'karachi' ) ) . ' in Karachi and ' . hcc_format_pkr( hcc_rate_per_sqft( 'grey', 'islamabad' ) ) . ' in Islamabad (1,000 sq ft single storey, rates last updated ' . hcc_rates_date_human() . '). Of this, about PKR ' . number_format( $q['standard']['greyLabour'] ) . ' per sq ft is labour in Lahore. The figure moves with cement, steel and local labour rates, so select your city above and use the calculator for a current, city-adjusted grey structure cost.',
 		),
 		array(
 			'q' => 'How many cement bags are needed per square foot of construction?',
@@ -239,11 +425,11 @@ function hcc_faq_items() {
 		),
 		array(
 			'q' => 'How many bricks are needed per square foot of house construction in Pakistan?',
-			'a' => 'A typical residential structure in Pakistan uses roughly 7 to 9 bricks per square foot of covered area for walls and partitions, depending on wall thickness and design. This calculator uses an editable default of about 8 bricks per square foot, and you can adjust the brick price per 1,000 in the Advanced rates panel to match your local supplier\'s quotation.',
+			'a' => 'A typical brick-masonry house in Pakistan uses roughly 25 to 30 bricks per square foot of covered area for its 9-inch outer walls and 4.5-inch partitions, depending on wall thickness, room sizes and openings. This calculator uses an editable default of ' . number_format( $b['bricks'] ) . ' bricks per square foot at standard quality — about ' . number_format( round( $e5s['qty']['bricks'] ) ) . ' bricks for a single storey 5 Marla house — and you can adjust the brick price per 1,000 in the Advanced rates panel to match your local kiln or supplier.',
 		),
 		array(
 			'q' => 'What is the average flooring, electrical, plumbing and paint cost per square foot in Pakistan?',
-			'a' => 'For a standard-quality complete house, flooring/tiles typically account for roughly PKR 400–550 per sq ft, electrical wiring and fittings around PKR 200–280 per sq ft, plumbing pipework and fixtures around PKR 220–320 per sq ft, and paint/wall finishing around PKR 170–230 per sq ft — all scaled up at premium and luxury quality. This calculator itemizes each of these automatically inside your finishing cost breakdown, so you do not need to estimate them separately.',
+			'a' => 'For a standard-quality complete house in Lahore, the calculator\'s finishing materials come to about ' . $fin( 'tiles' ) . ' per sq ft for tiles and flooring, ' . $fin( 'electrical' ) . ' for electrical wiring and fittings, ' . $fin( 'plumbing' ) . ' for plumbing pipework and fixtures and ' . $fin( 'paint' ) . ' for paint, plus about ' . $fin( 'finishLabour' ) . ' per sq ft of finishing labour (tiler, electrician, plumber, painter). These are material-only figures before labour, and all scale up at premium and luxury quality. The calculator itemizes each of these inside your finishing cost breakdown, so you do not need to estimate them separately.',
 		),
 		array(
 			'q' => 'How can I reduce my house construction cost without lowering quality too much?',
@@ -280,10 +466,16 @@ function house_cost_calculator_shortcode( $atts ) {
 			'variant'      => 'grey-structure',
 			'city'         => '',
 			'faq'          => 'yes',
+			'qa'           => 'auto',
 		),
 		$atts,
 		'house_cost_calculator'
 	);
+	// v1.9.0 security: every attribute is whitelisted before it reaches HTML,
+	// JSON-LD or a URL (a contributor could otherwise inject markup).
+	$atts['variant'] = hcc_sanitize_variant( $atts['variant'] );
+	$atts['mode'] = in_array( $atts['mode'], array( 'full', 'calculator_only' ), true ) ? $atts['mode'] : 'calculator_only';
+	$atts['default_type'] = in_array( $atts['default_type'], array( 'grey', 'complete', 'turnkey' ), true ) ? $atts['default_type'] : '';
 
 	$img_url = get_template_directory_uri() . '/assets/img/';
 	$hcc_cities_all = hcc_city_factors();
@@ -291,8 +483,14 @@ function house_cost_calculator_shortcode( $atts ) {
 	$hcc_city_labels = hcc_city_labels();
 	// Pre-set the plot size on plot-size guide pages so the calculator opens on
 	// the size the visitor searched for (e.g. 10 Marla, double storey).
-	$hcc_presets = array( '3-marla' => array( 3, 'marla', 1 ), '4-marla' => array( 4, 'marla', 1 ), '5-marla' => array( 5, 'marla', 1 ), '7-marla' => array( 7, 'marla', 1 ), '10-marla' => array( 10, 'marla', 2 ), '1-kanal' => array( 1, 'kanal', 2 ) );
-	$hcc_preset = isset( $hcc_presets[ $atts['variant'] ] ) ? $hcc_presets[ $atts['variant'] ] : array( 5, 'marla', 1 );
+	$hcc_preset = hcc_calculator_preset( $atts['variant'] );
+	$hcc_plot_sqft = hcc_preset_plot_sqft( $hcc_preset );
+	$hcc_covered = hcc_suggest_covered_area( $hcc_plot_sqft, $hcc_preset[2] );
+	$hcc_type = $atts['default_type'] ? $atts['default_type'] : 'complete';
+	$hcc_rates = hcc_default_calc_rates();
+	// One quick-answer box per page: guide pages that open with their own
+	// "Quick answer" paragraph don't get a second one with other numbers.
+	$hcc_show_qa = 'yes' === $atts['qa'] || ( 'auto' === $atts['qa'] && ! hcc_variant_has_own_quick_answer( $atts['variant'] ) );
 
 	// SEO AUDIT FIX: pre-calculate the default (Lahore, standard quality,
 	// 1,000 sq ft) quick-answer figures server-side so they are present in
@@ -311,13 +509,15 @@ function house_cost_calculator_shortcode( $atts ) {
 	$hcc_qa_complete = hcc_compute_estimate( array_merge( $hcc_qa_common, array( 'constructionType' => 'complete' ) ) );
 
 	ob_start();
+	if ( $hcc_show_qa ) :
 	?>
 	<div class="quick-answer" id="quick-answer">
 		<strong>Quick answer:</strong>
 		<span class="qa-item">Grey structure in <span id="qa-city-label"><?php echo esc_html( isset( $hcc_city_labels[ $hcc_city ] ) ? $hcc_city_labels[ $hcc_city ] : 'Lahore' ); ?></span>: <span class="qa-val" id="qa-grey-val"><?php echo esc_html( hcc_format_pkr( $hcc_qa_grey['costPerSqft'] ) ); ?> / sq ft</span></span>
 		<span class="qa-item">Complete house: <span class="qa-val" id="qa-complete-val"><?php echo esc_html( hcc_format_pkr( $hcc_qa_complete['costPerSqft'] ) ); ?> / sq ft</span></span>
-		<span class="qa-item" style="color:#b7c6dc">(1,000 sq ft, standard quality — change city below)</span>
+		<span class="qa-item" style="color:#b7c6dc">(basis: 1,000 sq ft single storey, standard quality, typical design — change city below)</span>
 	</div>
+	<?php endif; ?>
 
 	<?php if ( 'full' !== $atts['mode'] ) echo hcc_variant_before_calculator( $atts['variant'] ); ?>
 
@@ -355,12 +555,13 @@ function house_cost_calculator_shortcode( $atts ) {
 							<select id="plot-unit" name="plot-unit">
 								<option value="marla"<?php selected( $hcc_preset[1], 'marla' ); ?>>Marla</option>
 								<option value="kanal"<?php selected( $hcc_preset[1], 'kanal' ); ?>>Kanal</option>
-								<option value="sqft">Sq Ft</option>
+								<option value="sqyd"<?php selected( $hcc_preset[1], 'sqyd' ); ?>>Sq Yd</option>
+								<option value="sqft"<?php selected( $hcc_preset[1], 'sqft' ); ?>>Sq Ft</option>
 							</select>
 						</div>
-						<span class="hint" id="plot-sqft-hint">= 1,125 sq ft (1 Marla = 225 sq ft)</span>
+						<span class="hint" id="plot-sqft-hint"><?php echo esc_html( hcc_plot_hint_text( $hcc_preset ) ); ?></span>
 					</div>
-					<div class="field" id="marla-standard-wrap">
+					<div class="field" id="marla-standard-wrap"<?php echo in_array( $hcc_preset[1], array( 'sqft', 'sqyd' ), true ) ? ' hidden' : ''; ?>>
 						<label for="marla-standard">Marla / Kanal Standard</label>
 						<select id="marla-standard" name="marla-standard">
 							<option value="225" selected>225 sq ft — Society Marla (LDA, DHA, Bahria Town &amp; most modern societies)</option>
@@ -386,16 +587,16 @@ function house_cost_calculator_shortcode( $atts ) {
 				<div class="grid">
 					<div class="field">
 						<label for="covered-area">Total Covered Area (sq ft, all floors)</label>
-						<input type="number" id="covered-area" name="covered-area" min="100" step="10" value="1350" inputmode="decimal">
-						<span class="hint" id="covered-area-hint">Auto-suggested from plot size &amp; storeys — edit if you have an exact drawing.</span>
+						<input type="number" id="covered-area" name="covered-area" min="100" step="10" value="<?php echo esc_attr( $hcc_covered ); ?>" inputmode="decimal">
+						<span class="hint" id="covered-area-hint">Auto-suggested from plot size &amp; storeys (<?php echo esc_html( number_format( $hcc_plot_sqft ) ); ?> sq ft plot × <?php echo esc_html( $hcc_preset[2] . ' storey' . ( $hcc_preset[2] > 1 ? 's' : '' ) ); ?>) — edit if you have an exact drawing.</span>
 					</div>
 					<div class="field">
 						<label for="storeys">Number of Storeys</label>
 						<select id="storeys" name="storeys">
 							<option value="1"<?php selected( $hcc_preset[2], 1 ); ?>>Single Storey (Ground Only)</option>
 							<option value="2"<?php selected( $hcc_preset[2], 2 ); ?>>Double Storey (Ground + 1)</option>
-							<option value="3">Triple Storey (Ground + 2)</option>
-							<option value="4">Ground + 3</option>
+							<option value="3"<?php selected( $hcc_preset[2], 3 ); ?>>Triple Storey (Ground + 2)</option>
+							<option value="4"<?php selected( $hcc_preset[2], 4 ); ?>>Ground + 3</option>
 						</select>
 					</div>
 					<div class="field">
@@ -444,7 +645,7 @@ function house_cost_calculator_shortcode( $atts ) {
 				<div class="grid" id="wall-length-wrap" hidden style="margin-top:14px">
 					<div class="field">
 						<label for="wall-length">Boundary Wall Length (running ft)</label>
-						<input type="number" id="wall-length" name="wall-length" min="0" step="5" value="0">
+						<input type="number" id="wall-length" name="wall-length" min="0" step="5" value="<?php echo esc_attr( round( 4.4 * sqrt( $hcc_plot_sqft ) ) ); ?>">
 						<span class="hint">Auto-suggested from plot perimeter — edit if you have an exact boundary survey.</span>
 					</div>
 				</div>
@@ -454,17 +655,17 @@ function house_cost_calculator_shortcode( $atts ) {
 				<legend>Construction Type</legend>
 				<div class="radio-grid" role="radiogroup" aria-label="Construction type">
 					<label class="radio-card">
-						<input type="radio" name="construction-type" value="grey">
+						<input type="radio" name="construction-type" value="grey"<?php checked( $hcc_type, 'grey' ); ?>>
 						<strong>Grey Structure</strong>
 						<span>Foundation, columns, beams, slab, roof &amp; brickwork only.</span>
 					</label>
 					<label class="radio-card">
-						<input type="radio" name="construction-type" value="complete" checked>
+						<input type="radio" name="construction-type" value="complete"<?php checked( $hcc_type, 'complete' ); ?>>
 						<strong>Complete House</strong>
 						<span>Grey structure + plaster, flooring, paint, plumbing &amp; electrical.</span>
 					</label>
 					<label class="radio-card">
-						<input type="radio" name="construction-type" value="turnkey">
+						<input type="radio" name="construction-type" value="turnkey"<?php checked( $hcc_type, 'turnkey' ); ?>>
 						<strong>Turnkey</strong>
 						<span>Complete house + kitchen cabinets, wardrobes &amp; fit-outs, move-in ready.</span>
 					</label>
@@ -521,32 +722,32 @@ function house_cost_calculator_shortcode( $atts ) {
 			<fieldset>
 				<legend>Material, Labour &amp; Fee Rates (Advanced)</legend>
 				<details class="advanced">
-					<summary>Customize construction material rates Pakistan 2026 for your local market</summary>
-					<p class="hint" style="margin:10px 0 0;">Defaults reflect typical Pakistani market rates as of 2026. Edit any field below to match your city's current supplier quotations — the calculator will use your numbers instead.</p>
+					<summary>Customize construction material rates Pakistan <?php echo esc_html( hcc_year() ); ?> for your local market</summary>
+					<p class="hint" style="margin:10px 0 0;">Defaults are our planning rates, last reviewed <?php echo esc_html( hcc_rates_date_human() ); ?>. Edit any field below to match your city's current supplier quotations — the calculator then uses your numbers exactly as entered (no city adjustment).</p>
 					<div class="grid">
 						<div class="field">
 							<label for="rate-cement">Cement (PKR / 50kg bag)</label>
-							<input type="number" id="rate-cement" min="0" step="10" value="1500">
+							<input type="number" id="rate-cement" min="0" step="10" value="<?php echo esc_attr( $hcc_rates['cement'] ); ?>">
 						</div>
 						<div class="field">
 							<label for="rate-steel">Steel / Saria (PKR / kg)</label>
-							<input type="number" id="rate-steel" min="0" step="1" value="280">
+							<input type="number" id="rate-steel" min="0" step="1" value="<?php echo esc_attr( $hcc_rates['steel'] ); ?>">
 						</div>
 						<div class="field">
 							<label for="rate-bricks">Bricks (PKR / 1000 nos.)</label>
-							<input type="number" id="rate-bricks" min="0" step="500" value="20000">
+							<input type="number" id="rate-bricks" min="0" step="500" value="<?php echo esc_attr( $hcc_rates['bricksPer1000'] ); ?>">
 						</div>
 						<div class="field">
 							<label for="rate-sand">Sand (PKR / cft)</label>
-							<input type="number" id="rate-sand" min="0" step="5" value="90">
+							<input type="number" id="rate-sand" min="0" step="5" value="<?php echo esc_attr( $hcc_rates['sand'] ); ?>">
 						</div>
 						<div class="field">
 							<label for="rate-crush">Crush / Bajri (PKR / cft)</label>
-							<input type="number" id="rate-crush" min="0" step="5" value="130">
+							<input type="number" id="rate-crush" min="0" step="5" value="<?php echo esc_attr( $hcc_rates['crush'] ); ?>">
 						</div>
 						<div class="field">
 							<label for="rate-approval">Approval / NOC Fee (PKR per Marla)</label>
-							<input type="number" id="rate-approval" min="0" step="500" value="18000">
+							<input type="number" id="rate-approval" min="0" step="500" value="<?php echo esc_attr( $hcc_rates['approvalPerMarla'] ); ?>">
 						</div>
 					</div>
 				</details>
@@ -582,7 +783,7 @@ function house_cost_calculator_shortcode( $atts ) {
 			</div>
 
 			<div class="disclaimer">
-				<strong>Please note:</strong> These figures are planning-stage estimates based on typical 2026 Pakistani market rates and standard material-quantity assumptions, all of which you can edit above. Actual construction cost can vary significantly by exact location, current market rates, site conditions, structural design, contractor and material brand. Always get a written quotation from a licensed contractor or structural engineer before finalizing your budget.
+				<strong>Please note:</strong> These figures are planning-stage estimates based on typical <?php echo esc_html( hcc_year() ); ?> Pakistani market rates and standard material-quantity assumptions, all of which you can edit above. Actual construction cost can vary significantly by exact location, current market rates, site conditions, structural design, contractor and material brand. Always get a written quotation from a licensed contractor or structural engineer before finalizing your budget.
 			</div>
 
 			<div class="result-actions">
@@ -630,12 +831,15 @@ function house_cost_calculator_shortcode( $atts ) {
 add_shortcode( 'house_cost_calculator', 'house_cost_calculator_shortcode' );
 
 function hcc_render_guide( $img_url ) {
+	$hcc_bands = hcc_price_bands();
+	$hcc_shares = hcc_cost_shares();
+	$hcc_5d = hcc_estimate( 1125, 2 );
 	ob_start();
 	?>
 	<section id="guide" aria-labelledby="guide-heading">
 		<div class="guide-title-row">
 			<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><use href="#icon-ruler-compass"></use></svg>
-			<h2 id="guide-heading">House Construction Cost in Pakistan (2026): The Complete Guide</h2>
+			<h2 id="guide-heading">House Construction Cost in Pakistan (<?php echo esc_html( hcc_year() ); ?>): The Complete Guide</h2>
 		</div>
 		<div class="title-underline" aria-hidden="true"></div>
 		<p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 14px; font-weight:600;">Rates last updated: <?php echo esc_html( hcc_rates_date_human() ); ?> &nbsp;·&nbsp; Covers Lahore, Karachi, Islamabad &amp; 8 other cities</p>
@@ -664,7 +868,7 @@ function hcc_render_guide( $img_url ) {
 				<span class="plus" aria-hidden="true">+</span>
 			</summary>
 			<div class="accordion-body">
-				<p>House construction cost estimation in Pakistan generally works by multiplying your total covered area (in square feet) by a construction rate per square foot, then adjusting for city, quality standard, design complexity and the scope of work you actually want done. Covered area is not the same as plot size — a 5 Marla plot (1,125 sq ft) built as a double storey home could have roughly 1,900–2,100 sq ft of total covered area once you add both floors and typical coverage ratios allowed by local building bylaws.</p>
+				<p>House construction cost estimation in Pakistan generally works by multiplying your total covered area (in square feet) by a construction rate per square foot, then adjusting for city, quality standard, design complexity and the scope of work you actually want done. Covered area is not the same as plot size — a 5 Marla plot (1,125 sq ft) built as a double storey home has roughly <?php echo esc_html( number_format( $hcc_5d['covered'] ) ); ?> sq ft of total covered area once you add both floors and typical coverage ratios allowed by local building bylaws.</p>
 				<p>A detailed estimate, like the one this house construction cost calculator produces, goes a step further by breaking the rate per square foot into its underlying components: material quantities (cement, steel, bricks, sand, crush) multiplied by current market unit prices, plus a separate labour cost for structure work and finishing work. This "bottom-up" approach is more transparent than a single flat rate because you can see exactly which assumption to change if your local prices differ — for example, if cement is more expensive in your city, you only need to update that one number rather than re-estimating the whole project.</p>
 				<p>Two houses of the same covered area can have very different costs depending on the number of storeys (which affects foundation and steel requirements), the presence of a basement or boundary wall, an architecturally complex design, the number of bathrooms and kitchens (which affects plumbing, tiling and fixture costs), and of course the quality tier chosen for finishing materials.</p>
 			</div>
@@ -708,22 +912,22 @@ function hcc_render_guide( $img_url ) {
 				<span class="acc-icon"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#icon-ruler"></use></svg></span>
 				<span class="sum-text">
 					<h3>Construction Cost Per Square Foot Explained</h3>
-					<span class="preview">Per-sq-ft rates in Pakistan typically range from around PKR 1,800 (grey) to PKR 7,000+ (luxury complete).</span>
+					<span class="preview">Per-sq-ft rates in Pakistan range from around PKR <?php echo esc_html( number_format( $hcc_bands['grey'][0] ) ); ?> (grey) to PKR <?php echo esc_html( number_format( $hcc_bands['turnkey'][1] ) ); ?> (luxury turnkey).</span>
 				</span>
 				<span class="plus" aria-hidden="true">+</span>
 			</summary>
 			<div class="accordion-body">
 				<figure class="illo">
-					<img src="<?php echo esc_url( $img_url . 'cost-per-sqft-chart.svg' ); ?>" alt="Bar chart of construction cost per square foot in Pakistan across grey structure, economy, standard, premium and turnkey quality tiers" width="520" height="170" loading="lazy">
-					<figcaption>Indicative construction cost per square foot in Pakistan by quality tier (2026).</figcaption>
+					<?php echo hcc_cost_chart_svg(); // phpcs:ignore -- built from escaped engine numbers ?>
+					<figcaption>Construction cost per square foot in Pakistan by quality tier, cheapest to most expensive city (<?php echo esc_html( hcc_year() ); ?>).</figcaption>
 				</figure>
-				<p>Construction cost per square foot is simply your total estimated cost divided by total covered area, and it's the most common way contractors and homeowners in Pakistan compare projects — and the fastest way to compare a construction cost calculator Lahore result against a construction cost calculator Karachi or construction cost calculator Islamabad result. Based on typical 2026 market data across major cities, indicative ranges are:</p>
+				<p>Construction cost per square foot is simply your total estimated cost divided by total covered area, and it's the most common way contractors and homeowners in Pakistan compare projects — and the fastest way to compare a construction cost calculator Lahore result against a construction cost calculator Karachi or construction cost calculator Islamabad result. At this calculator's current default rates (<?php echo esc_html( hcc_rates_date_human() ); ?>), from the cheapest city to Islamabad, the ranges are:</p>
 				<ul>
-					<li><strong>Grey structure only:</strong> roughly PKR 1,800 – 3,000 per sq ft</li>
-					<li><strong>Complete house — economy quality:</strong> roughly PKR 2,600 – 3,300 per sq ft</li>
-					<li><strong>Complete house — standard quality:</strong> roughly PKR 3,300 – 4,300 per sq ft</li>
-					<li><strong>Complete house — premium quality:</strong> roughly PKR 4,500 – 6,000 per sq ft</li>
-					<li><strong>Turnkey / luxury finishing:</strong> roughly PKR 6,000 – 8,500+ per sq ft</li>
+					<?php
+					foreach ( array( 'grey' => 'Grey structure only (economy to premium)', 'economy' => 'Complete house — economy quality', 'standard' => 'Complete house — standard quality', 'premium' => 'Complete house — premium quality', 'luxury' => 'Complete house — luxury quality', 'turnkey' => 'Turnkey (standard to luxury fit-out)' ) as $hcc_bk => $hcc_bl ) {
+						echo '<li><strong>' . esc_html( $hcc_bl ) . ':</strong> roughly PKR ' . esc_html( number_format( $hcc_bands[ $hcc_bk ][0] ) . ' – ' . number_format( $hcc_bands[ $hcc_bk ][1] ) ) . ' per sq ft</li>';
+					}
+					?>
 				</ul>
 				<p>These ranges shift with cement, steel and labour prices, and with city — Islamabad and Lahore tend to run slightly higher than smaller cities due to labour and transport costs. Because prices move throughout the year, this construction cost calculator uses editable rate fields so you can plug in your own supplier's current quotation instead of relying on a fixed number.</p>
 			</div>
@@ -734,16 +938,16 @@ function hcc_render_guide( $img_url ) {
 				<span class="acc-icon"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#icon-split"></use></svg></span>
 				<span class="sum-text">
 					<h3>Material Cost vs Labour Cost: Where Your Money Goes</h3>
-					<span class="preview">Materials (cement, steel, bricks, tiles) typically account for 55–65% of total cost, labour for the rest.</span>
+					<span class="preview">Materials (cement, steel, bricks, tiles) are about <?php echo esc_html( $hcc_shares['total_material'] ); ?>% of a standard complete house, labour and services the rest.</span>
 				</span>
 				<span class="plus" aria-hidden="true">+</span>
 			</summary>
 			<div class="accordion-body">
 				<figure class="illo">
-					<img src="<?php echo esc_url( $img_url . 'material-vs-labour-chart.svg' ); ?>" alt="Donut chart showing material cost is about 65 percent of grey structure spending and 55 percent of finishing spending, with labour making up the rest" width="400" height="150" loading="lazy">
+					<?php echo hcc_material_labour_svg(); // phpcs:ignore -- built from escaped engine numbers ?>
 					<figcaption>Material vs labour cost split for grey structure and finishing work.</figcaption>
 				</figure>
-				<p>For grey structure work, material cost (cement, steel/saria, bricks, sand and crush) usually makes up 65–75% of the total, with skilled and unskilled labour (mason, steel-fixer, helper) accounting for the rest. For finishing work, the split shifts — tiling, paint, plumbing and electrical fittings are still material-heavy, but skilled labour (tile-layer, electrician, plumber, painter, carpenter) plays a bigger role, often 40–50% of finishing cost.</p>
+				<p>For grey structure work, material cost (cement, steel/saria, bricks, sand and crush) makes up about <?php echo esc_html( $hcc_shares['grey_material'] ); ?>% of the total at standard quality in this calculator, with skilled and unskilled labour (mason, steel-fixer, helper) accounting for the rest. For finishing work, the split shifts — tiling, paint, plumbing and electrical fittings are still material-heavy, but skilled labour (tile-layer, electrician, plumber, painter, carpenter) plays a bigger role, about <?php echo esc_html( $hcc_shares['finish_labour'] ); ?>% of finishing cost at standard quality (42–50% across quality tiers).</p>
 				<p>Common finishing cost categories include: floor and wall tiles, plumbing pipework and fixtures, electrical wiring and switches/sockets, paint and wall finishing, and woodwork such as doors, window frames and, for turnkey projects, cabinets and wardrobes. Each of these is estimated separately in the house construction cost breakdown above so you can see exactly where your budget is going, rather than just one lump "finishing" figure.</p>
 			</div>
 		</details>
@@ -939,8 +1143,9 @@ function hcc_render_schema_custom( $faqs, $app_url, $app_name, $app_description,
 	if ( $image_url ) {
 		$app_schema['image'] = $image_url;
 	}
-	$out  = '<script type="application/ld+json">' . wp_json_encode( $app_schema, JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
-	$out .= '<script type="application/ld+json">' . wp_json_encode( $faq_schema, JSON_UNESCAPED_SLASHES ) . '</script>';
+	// JSON_HEX_TAG: a "</script>" inside any value can never close the tag.
+	$out  = '<script type="application/ld+json">' . wp_json_encode( $app_schema, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ) . '</script>' . "\n";
+	$out .= '<script type="application/ld+json">' . wp_json_encode( $faq_schema, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ) . '</script>';
 	return $out;
 }
 
@@ -1098,7 +1303,7 @@ function hcc_variant_schema( $variant ) {
 			home_url( '/construction-cost-' . $c . '/' ),
 			'Construction Cost Calculator ' . $label,
 			'Free online calculator to estimate house construction cost in ' . $label . ' — grey structure, complete and turnkey cost per square foot, material quantities and an itemized PDF report.',
-			'construction cost ' . strtolower( $label ) . ', construction cost per sq ft ' . strtolower( $label ) . ', house construction cost ' . strtolower( $label ) . ' 2026, grey structure rate ' . strtolower( $label )
+			'construction cost ' . strtolower( $label ) . ', construction cost per sq ft ' . strtolower( $label ) . ', house construction cost ' . strtolower( $label ) . ' ' . hcc_year() . ', grey structure rate ' . strtolower( $label )
 		);
 	}
 	if ( 'marla-standards' === $variant ) {
@@ -1154,17 +1359,25 @@ function hcc_plot_size_faq_items( $variant ) {
 	$economy  = hcc_compute_estimate( array_merge( $common, array( 'constructionType' => 'complete', 'quality' => 'economy' ) ) );
 	$premium  = hcc_compute_estimate( array_merge( $common, array( 'constructionType' => 'complete', 'quality' => 'premium' ) ) );
 
-	$base = hcc_base_qty_per_sqft();
-	$cement = round( $covered * $base['cementBags'] );
-	$steel  = round( $covered * $base['steelKg'] );
-	$bricks = round( $covered * $base['bricks'] );
+	// Quantities straight from the engine (includes the storey factor).
+	$cement = round( $grey['qty']['cementBags'] );
+	$steel  = round( $grey['qty']['steelKg'] );
+	$bricks = round( $grey['qty']['bricks'] );
 
 	$plot_desc = ( '1-kanal' === $variant ) ? '1 Kanal (4,500 sq ft)' : $s['label'] . ' (' . number_format( $s['plotSqft'] ) . ' sq ft)';
 	$storey_word = 1 === $s['storeys'] ? 'single storey' : ( $s['storeys'] . '-storey' );
+	$double = 1 === $s['storeys'] ? hcc_estimate( $s['plotSqft'], 2 ) : null;
+	$storey_answer = 1 === $s['storeys']
+		? 'A ' . $s['label'] . ' plot (' . number_format( $s['plotSqft'] ) . ' sq ft) built single storey gives about ' . number_format( $covered ) . ' sq ft, which keeps foundation and steel requirements lower and construction cost more predictable. Building double storey gives about ' . number_format( $double['covered'] ) . ' sq ft (more bedrooms, a separate lounge, or a rentable upper portion) for about ' . hcc_format_pkr( $double['grandTotal'] ) . ' at standard quality — a higher total, but a lower land cost per bedroom. Try both storey counts in the calculator above to compare.'
+		: '';
+	if ( '3-marla' === $variant ) {
+		// The 3 Marla page says most owners build double storey; keep the FAQ consistent.
+		$storey_answer = 'Most 3 Marla houses are built double storey, because a single storey (about ' . number_format( $covered ) . ' sq ft) only fits one bedroom, a small lounge, a kitchen and a bathroom. A double storey 3 Marla house gives about ' . number_format( $double['covered'] ) . ' sq ft for roughly ' . hcc_format_pkr( $double['grandTotal'] ) . ' at standard quality in Lahore, against ' . hcc_format_pkr( $standard['grandTotal'] ) . ' for single storey. Compare both in the calculator above.';
+	}
 
 	return array(
 		array(
-			'q' => 'How much does a ' . $s['label'] . ' house cost to construct in Pakistan in 2026?',
+			'q' => 'How much does a ' . $s['label'] . ' house cost to construct in Pakistan in ' . hcc_year() . '?',
 			'a' => 'For a ' . $plot_desc . ' plot built ' . $storey_word . ' with an estimated ' . number_format( $covered ) . ' sq ft of covered area, complete house construction (standard quality, Lahore) costs roughly ' . hcc_format_pkr( $standard['grandTotal'] ) . ' — about ' . hcc_format_pkr( $standard['costPerSqft'] ) . ' per sq ft. Economy quality brings this down to around ' . hcc_format_pkr( $economy['grandTotal'] ) . ', while premium finishing raises it to around ' . hcc_format_pkr( $premium['grandTotal'] ) . '. Grey structure only (no finishing) costs around ' . hcc_format_pkr( $grey['grandTotal'] ) . '. These are calculator-based planning estimates for Lahore — use the calculator on this page to adjust for your own city, quality and design.',
 		),
 		array(
@@ -1180,7 +1393,7 @@ function hcc_plot_size_faq_items( $variant ) {
 				? 'Should a ' . $s['label'] . ' house be built single storey or double storey?'
 				: 'Is a ' . $s['label'] . ' plot big enough to build a comfortable double storey house?',
 			'a' => 1 === $s['storeys']
-				? 'A ' . $s['label'] . ' plot (' . number_format( $s['plotSqft'] ) . ' sq ft) is commonly built as a single storey home with 2–3 bedrooms, which keeps foundation and steel requirements lower and construction cost more predictable. Some owners add a second storey later, or build double storey from the start to get more covered area (more bedrooms, a separate lounge, or a rentable upper portion) for a higher total cost but a lower land cost per bedroom — try both storey counts in the calculator above to compare.'
+				? $storey_answer
 				: 'Yes — a ' . $s['label'] . ' plot (' . number_format( $s['plotSqft'] ) . ' sq ft) comfortably supports a double storey house with an estimated ' . number_format( $covered ) . ' sq ft of combined covered area, typically enough for 4–5 bedrooms, multiple bathrooms, a drawing/lounge area and a kitchen on each level. A double storey build costs more in total than a single storey house on the same plot (more steel, more finishing area) but often works out cheaper per bedroom.',
 		),
 	);

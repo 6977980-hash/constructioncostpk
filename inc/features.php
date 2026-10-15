@@ -9,6 +9,23 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+/**
+ * Rate-limit key for the visitor. Behind the Hostinger CDN every request
+ * arrives from a few edge addresses, so REMOTE_ADDR alone put all visitors
+ * in one shared bucket; the visitor's own address is the first entry of
+ * X-Forwarded-For. Both are combined (and only hashed, never stored).
+ */
+function hcc_client_ip_key() {
+	$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+	$fwd = '';
+	foreach ( array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR' ) as $h ) {
+		if ( empty( $_SERVER[ $h ] ) ) continue;
+		$first = trim( explode( ',', (string) $_SERVER[ $h ] )[0] );
+		if ( filter_var( $first, FILTER_VALIDATE_IP ) ) { $fwd = $first; break; }
+	}
+	return $remote . '|' . $fwd;
+}
+
 /* ==========================================================================
  * E4 — Contact form
  * ======================================================================== */
@@ -45,7 +62,7 @@ function hcc_handle_contact() {
 	if ( $bot ) { wp_safe_redirect( add_query_arg( 'hcc_sent', 'ok', $back ) ); exit; } // silently drop bots
 	if ( ! $ok || ! $name || ! is_email( $email ) || strlen( $msg ) < 5 ) { wp_safe_redirect( add_query_arg( 'hcc_sent', 'err', $back ) . '#hcc-c-name' ); exit; }
 	// simple rate limit: 5 messages / hour / IP (IP is hashed, never stored raw)
-	$rl = 'hcc_rl_' . md5( wp_salt() . ( isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : '' ) );
+	$rl = 'hcc_rl_' . md5( wp_salt() . hcc_client_ip_key() );
 	$n = (int) get_transient( $rl );
 	if ( $n >= 5 ) { wp_safe_redirect( add_query_arg( 'hcc_sent', 'err', $back ) ); exit; }
 	set_transient( $rl, $n + 1, HOUR_IN_SECONDS );
@@ -83,8 +100,7 @@ add_action( 'rest_api_init', function () {
 		'methods' => 'POST',
 		'permission_callback' => '__return_true',
 		'callback' => function ( WP_REST_Request $r ) {
-			$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : '';
-			$rl = 'hcc_fb_' . md5( wp_salt() . $ip );
+			$rl = 'hcc_fb_' . md5( wp_salt() . hcc_client_ip_key() );
 			$n = (int) get_transient( $rl );
 			if ( $n >= 10 ) return new WP_REST_Response( array( 'ok' => false ), 429 );
 			set_transient( $rl, $n + 1, HOUR_IN_SECONDS );
@@ -187,5 +203,6 @@ function hcc_calc_js_config() {
 		'jspdf' => get_template_directory_uri() . '/assets/js/vendor/jspdf.umd.min.js?ver=2.5.1',
 		'brand' => HCC_BRAND,
 		'site' => home_url( '/' ),
+		'rates' => hcc_default_calc_rates(),
 	);
 }

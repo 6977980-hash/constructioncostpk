@@ -1,9 +1,10 @@
 /* ============================================================================
    House Construction Cost Calculator — calculation engine + UI wiring
-   Runs entirely in the visitor's browser. Nothing entered here is ever sent
-   to any server (see the Privacy Policy page) — this file itself performs
-   no network requests except lazily loading the PDF library, and only when
-   the visitor actually clicks "Download PDF Report".
+   Runs entirely in the visitor's browser. Calculator inputs are never sent
+   to any server (see the Privacy Policy page). The only network requests
+   this file makes are lazily loading the PDF library when the visitor clicks
+   "Download PDF Report", and the optional estimate feedback — only when the
+   visitor clicks a feedback button.
    ============================================================================ */
 (function () {
   "use strict";
@@ -46,7 +47,7 @@
   var BASE_QTY_PER_SQFT = {
     cementBags: 0.42,
     steelKg: 3.6,
-    bricks: 8.0,
+    bricks: 27.0, // v1.9.0: was 8; a real take-off is about 25–30 per sq ft
     sandCft: 1.1,
     crushCft: 0.85
   };
@@ -88,6 +89,15 @@
   var ROOM_MATERIAL_SHARE = 0.60, ROOM_LABOUR_SHARE = 0.40;
   var WALL_MATERIAL_SHARE = 0.62, WALL_LABOUR_SHARE = 0.38;
 
+  // Default material rates come from PHP (hcc_default_calc_rates) so every
+  // page, the form fields and this file share one source. The literal values
+  // are only a fallback for a page that forgot to print window.hccCalc.
+  var DEFAULT_RATES = (window.hccCalc && window.hccCalc.rates) || { cement: 1500, steel: 275, bricksPer1000: 20000, sand: 90, crush: 130, approvalPerMarla: 18000 };
+
+  // Upper limits for the form — anything above is almost certainly a typo.
+  var LIMITS = { plotSqft: 200000, coveredArea: 200000, basementArea: 100000, wallLength: 5000, rooms: 30,
+    cement: 20000, steel: 2000, bricksPer1000: 200000, sand: 2000, crush: 2000, approvalPerMarla: 2000000 };
+
   var BASEMENT_EXTRA_FACTOR = 1.45; // basement ~45% more per sq ft than ground-floor grey structure
   var STOREY_COMPLEXITY_PER_FLOOR = 0.03; // +3% per storey above the 1st
 
@@ -106,12 +116,15 @@
     n = Math.round(n);
     return "PKR " + n.toLocaleString("en-US");
   }
+  // Same rules as hcc_lakh_crore() in PHP: round first, then pick the unit.
   function toLacCroreLabel(n) {
     n = Math.round(n);
-    if (n >= 10000000) return "≈ " + (n / 10000000).toFixed(2) + " Crore";
-    if (n >= 100000) return "≈ " + (n / 100000).toFixed(1) + " Lac";
+    var lakh = Math.round(n / 10000) / 10;
+    if (lakh >= 100) return "≈ " + trimNum((n / 10000000).toFixed(2)) + " Crore";
+    if (n >= 100000) return "≈ " + trimNum(lakh.toFixed(1)) + " Lakh";
     return "";
   }
+  function trimNum(s) { return s.indexOf(".") >= 0 ? s.replace(/0+$/, "").replace(/\.$/, "") : s; }
   // Reads the live "Marla / Kanal Standard" dropdown, if present on the page.
   // Falls back to the 225 sq ft default used by every static guide page.
   function getMarlaToSqft() {
@@ -124,15 +137,22 @@
     var m = marlaToSqftOverride > 0 ? marlaToSqftOverride : getMarlaToSqft();
     if (unit === "marla") return size * m;
     if (unit === "kanal") return size * 20 * m; // 1 Kanal = 20 Marla, whichever standard is selected
+    if (unit === "sqyd") return size * 9; // Karachi plots: 1 sq yd = 9 sq ft
     return size;
   }
+  // v1.9.0: interpolated ratio (mirrors hcc_coverage_ratio in PHP) so a
+  // bigger plot never gets less covered area than a smaller one.
+  function coverageRatio(p) {
+    if (p <= 1125) return 0.85;
+    if (p <= 1575) return 0.85 - (p - 1125) / 450 * 0.10;
+    if (p <= 2250) return 0.75;
+    if (p <= 4500) return 0.75 - (p - 2250) / 2250 * 0.10;
+    if (p <= 9000) return 0.65 - (p - 4500) / 4500 * 0.10;
+    return 0.55;
+  }
   function suggestCoveredArea(plotSqft, storeys) {
-    var coverageRatio;
-    if (plotSqft <= 1350) coverageRatio = 0.85;
-    else if (plotSqft <= 2250) coverageRatio = 0.75;
-    else if (plotSqft <= 4500) coverageRatio = 0.65;
-    else coverageRatio = 0.55;
-    return Math.round(plotSqft * coverageRatio * storeys);
+    plotSqft = Math.max(0, plotSqft);
+    return Math.round(plotSqft * coverageRatio(plotSqft) * Math.max(1, storeys));
   }
   function suggestWallLength(plotSqft) {
     return Math.round(WALL_PERIMETER_FACTOR * Math.sqrt(Math.max(0, plotSqft)));
@@ -156,20 +176,29 @@
     var matCityFactor = 1 + (cityFactor - 1) * 0.35;
     var storeyFactor = 1 + Math.max(0, storeys - 1) * STOREY_COMPLEXITY_PER_FLOOR;
     var complexityLabourFactor = storeyFactor * dc.labourFactor;
-    var rates = inputs.rates;
+    var rates = {};
+    ["cement", "steel", "bricksPer1000", "sand", "crush", "approvalPerMarla"].forEach(function (k) {
+      var v = inputs.rates && inputs.rates[k] != null ? +inputs.rates[k] : DEFAULT_RATES[k];
+      rates[k] = Math.max(0, isFinite(v) ? v : 0);
+    });
+    // v1.9.0: the city material factor only adjusts rates still at their
+    // default. A rate the visitor typed is their own local quote.
+    function mrate(k) { return Math.abs(rates[k] - DEFAULT_RATES[k]) < 0.0001 ? rates[k] * matCityFactor : rates[k]; }
 
+    // v1.9.0: storey factor is part of the quantity, so quantity × rate = line cost.
+    var qf = coveredArea * q.qtyFactor * dc.qtyBump * storeyFactor;
     var qty = {
-      cementBags: coveredArea * BASE_QTY_PER_SQFT.cementBags * q.qtyFactor * dc.qtyBump,
-      steelKg: coveredArea * BASE_QTY_PER_SQFT.steelKg * q.qtyFactor * dc.qtyBump,
-      bricks: coveredArea * BASE_QTY_PER_SQFT.bricks * q.qtyFactor * dc.qtyBump,
-      sandCft: coveredArea * BASE_QTY_PER_SQFT.sandCft * q.qtyFactor * dc.qtyBump,
-      crushCft: coveredArea * BASE_QTY_PER_SQFT.crushCft * q.qtyFactor * dc.qtyBump
+      cementBags: qf * BASE_QTY_PER_SQFT.cementBags,
+      steelKg: qf * BASE_QTY_PER_SQFT.steelKg,
+      bricks: qf * BASE_QTY_PER_SQFT.bricks,
+      sandCft: qf * BASE_QTY_PER_SQFT.sandCft,
+      crushCft: qf * BASE_QTY_PER_SQFT.crushCft
     };
 
-    var itemCement = qty.cementBags * rates.cement * matCityFactor * storeyFactor;
-    var itemSteel = qty.steelKg * rates.steel * matCityFactor * storeyFactor;
-    var itemBricks = qty.bricks * (rates.bricksPer1000 / 1000) * matCityFactor * storeyFactor;
-    var itemSandCrush = (qty.sandCft * rates.sand + qty.crushCft * rates.crush) * matCityFactor * storeyFactor;
+    var itemCement = qty.cementBags * mrate("cement");
+    var itemSteel = qty.steelKg * mrate("steel");
+    var itemBricks = qty.bricks * (mrate("bricksPer1000") / 1000);
+    var itemSandCrush = qty.sandCft * mrate("sand") + qty.crushCft * mrate("crush");
     var itemStructureLabour = coveredArea * q.greyLabour * cityFactor * complexityLabourFactor;
 
     var greyStructureCost = itemCement + itemSteel + itemBricks + itemSandCrush + itemStructureLabour;
@@ -179,13 +208,19 @@
 
     var greyStructureSubtotal = greyStructureCost + basementCost;
 
+    // Basement material quantities, in proportion to its share of grey cost.
+    var basementQtyFactor = coveredArea > 0 ? 1 + (basementArea * BASEMENT_EXTRA_FACTOR) / coveredArea : 1;
+    Object.keys(qty).forEach(function (k) { qty[k] *= basementQtyFactor; });
+
+    // A basement is finished like the floors above it.
+    var finishArea = coveredArea + basementArea;
     var itemTiles = 0, itemPlumbing = 0, itemElectrical = 0, itemPaint = 0, itemWoodwork = 0,
       itemMiscFinish = 0, itemFinishLabour = 0, itemRoomExtras = 0;
     var finishingSubtotal = 0;
 
     if (constructionType === "complete" || constructionType === "turnkey") {
-      var finishMaterialTotal = coveredArea * q.finishRate * (1 - q.finishLabourShare) * matCityFactor;
-      var finishLabourTotal = coveredArea * q.finishRate * q.finishLabourShare * cityFactor * dc.labourFactor;
+      var finishMaterialTotal = finishArea * q.finishRate * (1 - q.finishLabourShare) * matCityFactor;
+      var finishLabourTotal = finishArea * q.finishRate * q.finishLabourShare * cityFactor * dc.labourFactor;
 
       itemTiles = finishMaterialTotal * FINISH_MATERIAL_SPLIT.tiles;
       itemPlumbing = finishMaterialTotal * FINISH_MATERIAL_SPLIT.plumbing;
@@ -195,7 +230,7 @@
       itemMiscFinish = finishMaterialTotal * FINISH_MATERIAL_SPLIT.misc;
       itemFinishLabour = finishLabourTotal;
 
-      var baselineBathrooms = Math.ceil(inputs.bedrooms / 2) || 1;
+      var baselineBathrooms = Math.ceil(Math.max(0, inputs.bedrooms) / 2) || 1;
       var extraBathrooms = Math.max(0, inputs.bathrooms - baselineBathrooms);
       var extraKitchens = Math.max(0, inputs.kitchens - 1);
       var kitchenFactor = constructionType === "turnkey" ? 1 : 0.5;
@@ -205,7 +240,7 @@
       finishingSubtotal = itemTiles + itemPlumbing + itemElectrical + itemPaint + itemWoodwork + itemMiscFinish + itemFinishLabour + itemRoomExtras;
     }
 
-    var itemTurnkey = constructionType === "turnkey" ? coveredArea * q.turnkeyRate * cityFactor * dc.labourFactor : 0;
+    var itemTurnkey = constructionType === "turnkey" ? finishArea * q.turnkeyRate * cityFactor * dc.labourFactor : 0;
 
     // Optional boundary wall (off by default) — a "hidden cost head" that many
     // simple calculators omit entirely.
@@ -219,10 +254,10 @@
     var hasApproval = !!inputs.hasApprovalFee;
     var marlaToSqft = inputs.marlaToSqft > 0 ? inputs.marlaToSqft : MARLA_TO_SQFT_DEFAULT;
     var plotMarla = inputs.plotSqft > 0 ? inputs.plotSqft / marlaToSqft : 0;
-    var itemApprovalFee = hasApproval ? plotMarla * (rates.approvalPerMarla || 0) : 0;
+    var itemApprovalFee = hasApproval ? plotMarla * rates.approvalPerMarla : 0;
 
     var grandTotal = greyStructureSubtotal + finishingSubtotal + itemTurnkey + itemBoundaryWall + itemApprovalFee;
-    var costPerSqft = coveredArea > 0 ? (greyStructureSubtotal + finishingSubtotal + itemTurnkey) / coveredArea : 0;
+    var costPerSqft = finishArea > 0 ? (greyStructureSubtotal + finishingSubtotal + itemTurnkey) / finishArea : 0;
 
     var materialCostTotal = itemCement + itemSteel + itemBricks + itemSandCrush
       + itemTiles + itemPlumbing + itemElectrical + itemPaint + itemWoodwork + itemMiscFinish
@@ -236,7 +271,7 @@
       + itemBoundaryWall * WALL_LABOUR_SHARE + itemApprovalFee;
 
     return {
-      coveredArea: coveredArea, grandTotal: grandTotal, costPerSqft: costPerSqft,
+      coveredArea: coveredArea, basementArea: basementArea, totalArea: finishArea, grandTotal: grandTotal, costPerSqft: costPerSqft,
       greyStructureSubtotal: greyStructureSubtotal, finishingSubtotal: finishingSubtotal, turnkeyAddon: itemTurnkey,
       materialCostTotal: materialCostTotal, labourCostTotal: labourCostTotal,
       basementCost: basementCost, boundaryWallCost: itemBoundaryWall, approvalFeeCost: itemApprovalFee,
@@ -280,11 +315,15 @@
   var wallLengthTouched = false;
 
   function updatePlotHintAndSuggestion() {
-    if (marlaStandardWrap) marlaStandardWrap.hidden = (plotUnitSelect.value === "sqft");
+    var unit = plotUnitSelect.value;
+    if (marlaStandardWrap) marlaStandardWrap.hidden = (unit === "sqft" || unit === "sqyd");
     var marlaStd = getMarlaToSqft();
-    var plotSqft = sqftFromPlot(plotSizeInput.value, plotUnitSelect.value, marlaStd);
+    var plotSqft = sqftFromPlot(plotSizeInput.value, unit, marlaStd);
+    var unitNote = unit === "marla" ? " (1 Marla = " + marlaStd + " sq ft)"
+      : unit === "kanal" ? " (1 Kanal = " + (20 * marlaStd).toLocaleString("en-US") + " sq ft)"
+      : unit === "sqyd" ? " (1 sq yd = 9 sq ft)" : "";
     plotSqftHint.textContent = plotSqft > 0
-      ? ("= " + Math.round(plotSqft).toLocaleString("en-US") + " sq ft" + (plotUnitSelect.value !== "sqft" ? " (1 " + (plotUnitSelect.value === "marla" ? ("Marla = " + marlaStd + " sq ft") : ("Kanal = " + (20 * marlaStd).toLocaleString("en-US") + " sq ft")) + ")" : ""))
+      ? ("= " + Math.round(plotSqft).toLocaleString("en-US") + " sq ft" + unitNote)
       : "Enter a plot size";
     if (!coveredAreaTouched) {
       var storeys = parseInt(storeysSelect.value, 10) || 1;
@@ -353,7 +392,7 @@
     var qaCity = $("qa-city-label");
     if (!qaGrey || !qaComplete) return;
     var cityVal = $("city") ? $("city").value : "lahore";
-    var defaultRates = { cement: 1500, steel: 280, bricksPer1000: 20000, sand: 90, crush: 130, approvalPerMarla: 18000 };
+    var defaultRates = DEFAULT_RATES;
     var grey = computeEstimate({
       coveredArea: 1000, storeys: 1, hasBasement: false, basementArea: 0, hasBoundaryWall: false, wallLength: 0,
       hasApprovalFee: false, plotSqft: 0, constructionType: "grey", quality: "standard", designComplexity: "typical",
@@ -374,9 +413,15 @@
   /* --------------------------------------------------------------------------
      Read + validate inputs
   -------------------------------------------------------------------------- */
+  function num(el, fallback) {
+    var v = el ? parseFloat(el.value) : NaN;
+    return isFinite(v) ? v : (fallback || 0);
+  }
   function readInputs() {
-    var constructionType = form.querySelector('input[name="construction-type"]:checked').value;
-    var quality = form.querySelector('input[name="quality"]:checked').value;
+    var ctEl = form.querySelector('input[name="construction-type"]:checked');
+    var qEl = form.querySelector('input[name="quality"]:checked');
+    var constructionType = ctEl ? ctEl.value : "complete";
+    var quality = qEl ? qEl.value : "standard";
     var designComplexityEl = form.querySelector('input[name="design-complexity"]:checked');
     var marlaToSqft = getMarlaToSqft();
     var plotSqft = sqftFromPlot(plotSizeInput.value, plotUnitSelect.value, marlaToSqft);
@@ -400,19 +445,30 @@
       bathrooms: parseInt($("bathrooms").value, 10) || 0,
       kitchens: parseInt($("kitchens").value, 10) || 0,
       rates: {
-        cement: parseFloat($("rate-cement").value) || 0,
-        steel: parseFloat($("rate-steel").value) || 0,
-        bricksPer1000: parseFloat($("rate-bricks").value) || 0,
-        sand: parseFloat($("rate-sand").value) || 0,
-        crush: parseFloat($("rate-crush").value) || 0,
-        approvalPerMarla: $("rate-approval") ? (parseFloat($("rate-approval").value) || 0) : 18000
+        cement: num($("rate-cement")),
+        steel: num($("rate-steel")),
+        bricksPer1000: num($("rate-bricks")),
+        sand: num($("rate-sand")),
+        crush: num($("rate-crush")),
+        approvalPerMarla: $("rate-approval") ? num($("rate-approval")) : DEFAULT_RATES.approvalPerMarla
       }
     };
   }
 
+  // v1.9.0: the form is novalidate, so negative or absurd numbers are caught here.
+  var RATE_LABELS = { cement: "Cement rate", steel: "Steel rate", bricksPer1000: "Bricks rate", sand: "Sand rate", crush: "Crush rate", approvalPerMarla: "Approval fee" };
   function validateInputs(inputs) {
     if (!inputs.coveredArea || inputs.coveredArea < 100) return "Please enter a valid covered area of at least 100 sq ft.";
+    if (inputs.coveredArea > LIMITS.coveredArea) return "Covered area looks too large — please check the number (maximum " + LIMITS.coveredArea.toLocaleString("en-US") + " sq ft).";
     if (!inputs.plotSize || inputs.plotSize <= 0) return "Please enter a valid plot size.";
+    if (inputs.plotSqft > LIMITS.plotSqft) return "Plot size looks too large — please check the number and unit.";
+    if (inputs.bedrooms < 0 || inputs.bathrooms < 0 || inputs.kitchens < 0 || inputs.bedrooms > LIMITS.rooms || inputs.bathrooms > LIMITS.rooms || inputs.kitchens > LIMITS.rooms) return "Please enter room counts between 0 and " + LIMITS.rooms + ".";
+    if (inputs.hasBasement && inputs.basementArea > LIMITS.basementArea) return "Basement area looks too large — please check the number.";
+    if (inputs.hasBoundaryWall && inputs.wallLength > LIMITS.wallLength) return "Boundary wall length looks too large — please check the number.";
+    for (var k in RATE_LABELS) {
+      if (inputs.rates[k] < 0) return RATE_LABELS[k] + " cannot be negative.";
+      if (inputs.rates[k] > LIMITS[k]) return RATE_LABELS[k] + " looks too high — please check the number.";
+    }
     if (inputs.hasBasement && (!inputs.basementArea || inputs.basementArea <= 0)) return "Please enter a basement area, or uncheck “Include Basement”.";
     if (inputs.hasBoundaryWall && (!inputs.wallLength || inputs.wallLength <= 0)) return "Please enter a boundary wall length, or uncheck “Include Boundary Wall”.";
     return null;
@@ -437,7 +493,7 @@
     summaryGrid.innerHTML = "";
     var tiles = [
       { lab: "Total Estimated Cost", val: formatPKR(result.grandTotal), sub: toLacCroreLabel(result.grandTotal), total: true },
-      { lab: "Cost Per Sq Ft", val: formatPKR(result.costPerSqft), sub: "based on " + Math.round(result.coveredArea).toLocaleString("en-US") + " sq ft covered area" },
+      { lab: "Cost Per Sq Ft", val: formatPKR(result.costPerSqft), sub: "based on " + Math.round(result.totalArea).toLocaleString("en-US") + " sq ft " + (result.basementArea > 0 ? "incl. basement" : "covered area") },
       { lab: "Grey Structure Cost", val: formatPKR(result.greyStructureSubtotal), sub: result.basementCost > 0 ? "incl. basement" : "" },
       { lab: "Finishing Cost", val: inputs.constructionType === "grey" ? "Not Included" : formatPKR(result.finishingSubtotal), sub: "" },
       { lab: "Estimated Material Cost", val: formatPKR(result.materialCostTotal), sub: "" },
@@ -491,7 +547,7 @@
     addQty("Sand", Math.round(result.qty.sandCft).toLocaleString("en-US") + " cft");
     addQty("Crush / Bajri", Math.round(result.qty.crushCft).toLocaleString("en-US") + " cft");
     if (inputs.constructionType !== "grey") {
-      addQty("Tiles / Flooring (approx.)", Math.round(result.coveredArea * 1.05).toLocaleString("en-US") + " sq ft (incl. ~5% wastage)");
+      addQty("Tiles / Flooring (approx.)", Math.round(result.totalArea * 1.05).toLocaleString("en-US") + " sq ft (incl. ~5% wastage)");
     }
 
     resultsSection.hidden = false;
@@ -513,6 +569,9 @@
     if (err) {
       formError.textContent = err;
       formError.hidden = false;
+      // v1.9.0: don't leave an old result on screen next to the error.
+      resultsSection.hidden = true;
+      lastResult = null; lastInputs = null;
       return;
     }
     formError.hidden = true;
@@ -526,6 +585,7 @@
   if ($("reset-btn")) {
     $("reset-btn").addEventListener("click", function () {
       form.reset();
+      applyDefaultType(); // keep the page's preset (e.g. Grey Structure) after reset
       coveredAreaTouched = false;
       wallLengthTouched = false;
       if (basementAreaWrap) basementAreaWrap.hidden = true;
@@ -548,12 +608,13 @@
   function renderExamplesTable() {
     var wrap = $("examples-table-wrap");
     if (!wrap) return;
-    var defaultRates = { cement: 1500, steel: 280, bricksPer1000: 20000, sand: 90, crush: 130, approvalPerMarla: 18000 };
+    var defaultRates = DEFAULT_RATES;
+    var site = ((window.hccCalc && window.hccCalc.site) || "/").replace(/\/$/, "");
     var examples = [
-      { label: "5 Marla", plotSqft: 5 * MARLA_TO_SQFT, storeys: 1, url: "/5-marla-house-construction-cost/" },
-      { label: "7 Marla", plotSqft: 7 * MARLA_TO_SQFT, storeys: 1, url: "/7-marla-house-construction-cost/" },
-      { label: "10 Marla", plotSqft: 10 * MARLA_TO_SQFT, storeys: 2, url: "/10-marla-house-construction-cost/" },
-      { label: "1 Kanal", plotSqft: 1 * KANAL_TO_SQFT, storeys: 2, url: "/1-kanal-house-construction-cost/" }
+      { label: "5 Marla", plotSqft: 5 * MARLA_TO_SQFT, storeys: 1, url: site + "/5-marla-house-construction-cost/" },
+      { label: "7 Marla", plotSqft: 7 * MARLA_TO_SQFT, storeys: 1, url: site + "/7-marla-house-construction-cost/" },
+      { label: "10 Marla", plotSqft: 10 * MARLA_TO_SQFT, storeys: 2, url: site + "/10-marla-house-construction-cost/" },
+      { label: "1 Kanal", plotSqft: 1 * KANAL_TO_SQFT, storeys: 2, url: site + "/1-kanal-house-construction-cost/" }
     ];
     var rows = examples.map(function (ex) {
       var coveredArea = suggestCoveredArea(ex.plotSqft, ex.storeys);
@@ -596,7 +657,7 @@
   }
 
   function cityLabel(v) { var opt = document.querySelector('#city option[value="' + v + '"]'); return opt ? opt.textContent : v; }
-  function unitLabel(v) { return v === "marla" ? "Marla" : v === "kanal" ? "Kanal" : "Sq Ft"; }
+  function unitLabel(v) { return v === "marla" ? "Marla" : v === "kanal" ? "Kanal" : v === "sqyd" ? "Sq Yd" : "Sq Ft"; }
 
   function buildAndDownloadPdf() {
     if (!lastResult || !lastInputs) return;
@@ -649,7 +710,7 @@
 
     heading("Project Details", 12.5);
     bodyLine("City / Location:", cityLabel(lastInputs.city));
-    bodyLine("Plot Size:", lastInputs.plotSize + " " + unitLabel(lastInputs.plotUnit) + "  (" + Math.round(sqftFromPlot(lastInputs.plotSize, lastInputs.plotUnit, lastInputs.marlaToSqft)).toLocaleString("en-US") + " sq ft" + (lastInputs.plotUnit !== "sqft" && lastInputs.marlaToSqft !== MARLA_TO_SQFT_DEFAULT ? ", @ " + lastInputs.marlaToSqft + " sq ft/Marla" : "") + ")");
+    bodyLine("Plot Size:", lastInputs.plotSize + " " + unitLabel(lastInputs.plotUnit) + "  (" + Math.round(sqftFromPlot(lastInputs.plotSize, lastInputs.plotUnit, lastInputs.marlaToSqft)).toLocaleString("en-US") + " sq ft" + ((lastInputs.plotUnit === "marla" || lastInputs.plotUnit === "kanal") && lastInputs.marlaToSqft !== MARLA_TO_SQFT_DEFAULT ? ", @ " + lastInputs.marlaToSqft + " sq ft/Marla" : "") + ")");
     bodyLine("Total Covered Area:", Math.round(lastResult.coveredArea).toLocaleString("en-US") + " sq ft");
     bodyLine("Number of Storeys:", String(lastInputs.storeys));
     bodyLine("Basement:", lastInputs.hasBasement ? (Math.round(lastInputs.basementArea).toLocaleString("en-US") + " sq ft") : "Not included");
@@ -697,7 +758,7 @@
     tableRow("Bricks", Math.round(lastResult.qty.bricks).toLocaleString("en-US") + " nos.");
     tableRow("Sand", Math.round(lastResult.qty.sandCft).toLocaleString("en-US") + " cft");
     tableRow("Crush / Bajri", Math.round(lastResult.qty.crushCft).toLocaleString("en-US") + " cft");
-    if (lastInputs.constructionType !== "grey") tableRow("Tiles / Flooring (approx.)", Math.round(lastResult.coveredArea * 1.05).toLocaleString("en-US") + " sq ft");
+    if (lastInputs.constructionType !== "grey") tableRow("Tiles / Flooring (approx.)", Math.round(lastResult.totalArea * 1.05).toLocaleString("en-US") + " sq ft");
     y += 4; divider();
 
     checkPageBreak(24);
@@ -760,10 +821,12 @@
      requested, auto-run one calculation on load so a visitor arriving from a
      search result sees an instant number.
   -------------------------------------------------------------------------- */
-  if (form.dataset.defaultType) {
+  function applyDefaultType() {
+    if (!form.dataset.defaultType) return;
     var preset = form.querySelector('input[name="construction-type"][value="' + form.dataset.defaultType + '"]');
     if (preset) preset.checked = true;
   }
+  applyDefaultType();
   /* --------------------------------------------------------------------------
      v1.8.0 — analytics events (T7.2). Fires GA4 events only if gtag exists
      (i.e. the owner configured GA4); Clarity gets a custom tag. A DOM event
@@ -799,12 +862,18 @@
       actual: actual ? Math.round(actual) : 0
     };
     fb.querySelectorAll("[data-fb]").forEach(function (b) { b.disabled = true; });
+    var thanks = fb.querySelector(".fb-thanks");
     fetch(fb.getAttribute("data-endpoint"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), credentials: "omit" })
-      .catch(function () {})
-      .then(function () {
+      .then(function (res) {
+        if (!res.ok) throw new Error("http " + res.status);
         var a = fb.querySelector(".fb-actual"); if (a) a.hidden = true;
-        var t = fb.querySelector(".fb-thanks"); if (t) t.hidden = false;
+        if (thanks) { thanks.textContent = "Thank you — your feedback was recorded anonymously."; thanks.hidden = false; }
         track("estimate_feedback", { rating: fbRating });
+      })
+      .catch(function () {
+        // v1.9.0: say so when it failed instead of thanking the visitor anyway.
+        fb.querySelectorAll("[data-fb]").forEach(function (b) { b.disabled = false; });
+        if (thanks) { thanks.textContent = "Sorry, your feedback could not be sent. Please try again later."; thanks.hidden = false; }
       });
   }
   if (fb) {

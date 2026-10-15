@@ -275,7 +275,7 @@ function hcc_preload_hero() {
 	if ( ! $key ) return;
 	$reg = hcc_page_registry();
 	if ( empty( $reg[ $key ]['hero'] ) || 'grey-structure-cost-calculator' === $key ) return;
-	$url = get_template_directory_uri() . '/assets/img/' . $reg[ $key ]['hero'] . '.webp';
+	$url = get_template_directory_uri() . '/assets/img/' . $reg[ $key ]['hero'] . '.webp?ver=' . HCC_VERSION;
 	echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" type="image/webp" fetchpriority="high">' . "\n";
 }
 add_action( 'wp_head', 'hcc_preload_hero', 2 );

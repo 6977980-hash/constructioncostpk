@@ -61,6 +61,18 @@ function hcc_render_status_page() {
 		echo '<tr><td>' . esc_html( $slug ) . '</td><td>' . esc_html( hcc_format_pkr( hcc_estimate( $p[0], $p[1] )['grandTotal'] ) . ' (' . hcc_lakh_crore( hcc_estimate( $p[0], $p[1] )['grandTotal'] ) . ')' ) . '</td><td>' . esc_html( hcc_lakh_crore( hcc_estimate( $p[0], $p[1], 'grey' )['grandTotal'] ) ) . '</td><td>' . esc_html( $t ? $t : ( isset( $map[ $slug ] ) ? $map[ $slug ]['title'] . ' (theme default)' : '' ) ) . '</td></tr>';
 	}
 	echo '</tbody></table><p>Titles and descriptions live in each page\'s Rank Math box (Edit page → Rank Math → Edit Snippet). The theme defaults are in <code>inc/hcc-data.php → hcc_seo_meta_map()</code>. Rates date: <strong>' . esc_html( hcc_rates_date_human() ) . '</strong> (Appearance → Customize → ConstructionCostPK Settings).</p>';
+	echo '<h2>Page content</h2><p>"Live" pages build their figures from the calculator and today\'s default rates on every view. A page you edited by hand keeps your text; switch it to live only if you no longer need those edits (your current text is kept as a page revision).</p><table class="widefat striped"><thead><tr><th>Page</th><th>Status</th><th></th></tr></thead><tbody>';
+	$labels = array( 'live' => 'Live figures', 'theme' => 'Theme text, not switched yet', 'edited' => 'Edited by hand — frozen figures', 'missing' => 'Page not found' );
+	foreach ( hcc_live_page_status() as $slug => $st ) {
+		echo '<tr><td>' . esc_html( $slug ) . '</td><td>' . esc_html( $labels[ $st['status'] ] ) . '</td><td>';
+		if ( in_array( $st['status'], array( 'theme', 'edited' ), true ) ) {
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" onsubmit="return confirm(\'Replace this page\\\'s text with the live theme version? The current text stays available under Revisions.\');">';
+			wp_nonce_field( 'hcc_make_live' );
+			echo '<input type="hidden" name="action" value="hcc_make_live"><input type="hidden" name="slug" value="' . esc_attr( $slug ) . '"><button class="button">Use live theme version</button></form>';
+		}
+		echo '</td></tr>';
+	}
+	echo '</tbody></table>';
 	echo '<h2>Migration log</h2><ul>';
 	foreach ( $log as $l ) echo '<li>' . esc_html( $l ) . '</li>';
 	echo '</ul></div>';

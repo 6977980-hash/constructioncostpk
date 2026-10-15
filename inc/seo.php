@@ -43,6 +43,29 @@ add_filter( 'get_the_author_display_name', function ( $name ) {
 	return ( is_string( $name ) && false !== strpos( $name, '@' ) ) ? HCC_OWNER_NAME : $name;
 } );
 
+/* ---------- v1.9.0 — XML-RPC off (nothing on this site uses it; it is a brute-force target) ---------- */
+add_filter( 'xmlrpc_enabled', '__return_false' );
+add_filter( 'xmlrpc_methods', function () { return array(); } );
+add_filter( 'wp_headers', function ( $h ) { unset( $h['X-Pingback'] ); return $h; } );
+add_action( 'init', function () {
+	if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+		status_header( 403 );
+		header( 'Content-Type: text/plain; charset=utf-8' );
+		echo "XML-RPC is disabled on this site.\n";
+		exit;
+	}
+	remove_action( 'wp_head', 'rsd_link' );
+	remove_action( 'wp_head', 'wp_shortlink_wp_head' );
+	remove_action( 'template_redirect', 'wp_shortlink_header', 11 );
+}, 0 );
+
+/* ---------- v1.9.0 — contact form page is never cached (its form carries a nonce) ---------- */
+add_action( 'template_redirect', function () {
+	if ( ! is_page( 'contact-us' ) ) return;
+	nocache_headers();
+	do_action( 'litespeed_control_set_nocache', 'contact form nonce' );
+} );
+
 /* ---------- T7.3 — <html lang="en-PK"> ---------- */
 add_filter( 'language_attributes', function ( $output ) {
 	return str_replace( 'lang="en-US"', 'lang="en-PK"', $output );
@@ -71,7 +94,9 @@ add_filter( 'robots_txt', function ( $output, $public ) {
 	if ( false === stripos( $output, 'GPTBot' ) ) {
 		$bots = array( 'GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'PerplexityBot', 'ClaudeBot', 'Claude-SearchBot', 'Google-Extended', 'Bingbot' );
 		$add = "\n# AI / answer engines are welcome (ConstructionCostPK)\n";
-		foreach ( $bots as $b ) $add .= "User-agent: {$b}\nAllow: /\n\n";
+		// A crawler obeys only its own group, so each group repeats the
+		// wp-admin rule of "User-agent: *".
+		foreach ( $bots as $b ) $add .= "User-agent: {$b}\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\nAllow: /\n\n";
 		$output = $add . "\n" . $output;
 	}
 	if ( false === stripos( $output, 'Sitemap:' ) ) {
@@ -87,7 +112,7 @@ function hcc_llms_txt() {
 		return hcc_page_exists( $k ) ? '- [' . $title . '](' . hcc_page_url( $k ) . ')' . ( $note ? ': ' . $note : '' ) . "\n" : '';
 	};
 	$t  = "# ConstructionCostPK\n";
-	$t .= "> Free house construction cost calculator for Pakistan (2026 rates). Estimates grey\n> structure, complete and turnkey cost per sq ft, material quantities (cement, steel,\n> bricks, sand, crush) and an itemized PDF report. Rates in PKR, editable per city.\n\n";
+	$t .= "> Free house construction cost calculator for Pakistan (" . hcc_year() . " rates). Estimates grey\n> structure, complete and turnkey cost per sq ft, material quantities (cement, steel,\n> bricks, sand, crush) and an itemized PDF report. Rates in PKR, editable per city.\n\n";
 	$t .= "Headline figures (Lahore, standard quality, rates dated " . hcc_rates_date() . "): complete house " . hcc_format_pkr( hcc_rate_per_sqft( 'complete' ) ) . "/sq ft; grey structure " . hcc_format_pkr( hcc_rate_per_sqft( 'grey' ) ) . "/sq ft; 5 Marla complete " . hcc_format_pkr( hcc_estimate( 1125, 1 )['grandTotal'] ) . ".\n\n";
 	$t .= "## Calculators\n";
 	$t .= '- [House Construction Cost Calculator](' . home_url( '/' ) . "): main tool, all cities\n";
@@ -126,7 +151,16 @@ add_action( 'parse_request', function ( $wp ) {
 	if ( ! $which ) return;
 	if ( 'ads' === $which ) {
 		$pub = preg_replace( '/[^a-z0-9-]/i', '', (string) hcc_opt( 'adsense_pub' ) );
-		if ( ! $pub ) return; // no publisher ID yet → normal 404
+		if ( ! $pub ) {
+			// No publisher ID yet: a real 404. Falling through to WordPress
+			// served a 200 HTML page here (a soft 404 crawlers indexed).
+			status_header( 404 );
+			nocache_headers();
+			header( 'Content-Type: text/plain; charset=utf-8' );
+			header( 'X-Robots-Tag: noindex' );
+			echo "Not found\n";
+			exit;
+		}
 		$body = 'google.com, ' . ( 0 === strpos( $pub, 'pub-' ) ? $pub : 'pub-' . $pub ) . ", DIRECT, f08c47fec0942fa0\n";
 	} else {
 		$body = hcc_llms_txt();
