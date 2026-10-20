@@ -299,32 +299,22 @@ function hcc_remove_self_links( $content ) {
 add_filter( 'the_content', 'hcc_remove_self_links', 99 );
 
 /**
- * R8 — serve bundled hero infographics as WebP (PNG stays as the og:image),
- * and mark the first, above-the-fold hero fetchpriority="high".
+ * R8 — serve bundled hero infographics as WebP (PNG stays as the og:image).
+ * v1.13.1: an 800px copy (hero-*-800.webp) for phones and 1x screens. Since
+ * v1.12.0 the calculator comes first, so the hero sits well below the fold:
+ * it stays lazy, with no preload or fetchpriority competing with the LCP.
  */
 function hcc_hero_images( $content ) {
 	if ( is_admin() ) return $content;
 	$base = preg_quote( get_template_directory_uri() . '/assets/img/', '#' );
 	$content = preg_replace( '#(' . $base . 'hero-[a-z0-9-]+)\.png#', '$1.webp', $content );
-	$done = false;
-	$content = preg_replace_callback( '#<img\s[^>]*' . $base . 'hero-[^>]*>#', function ( $m ) use ( &$done ) {
-		if ( $done ) return $m[0];
-		$done = true;
+	return preg_replace_callback( '#<img\s[^>]*' . $base . 'hero-[^>]*>#', function ( $m ) {
 		$tag = $m[0];
-		if ( false === strpos( $tag, 'fetchpriority' ) ) $tag = str_replace( '<img ', '<img fetchpriority="high" decoding="async" ', $tag );
+		if ( false === strpos( $tag, 'srcset' ) && preg_match( '#\ssrc="([^"]+)\.webp([^"]*)"#', $tag, $src ) ) {
+			$set = $src[1] . '-800.webp' . $src[2] . ' 800w, ' . $src[1] . '.webp' . $src[2] . ' 1200w';
+			$tag = str_replace( '<img ', '<img srcset="' . esc_attr( $set ) . '" sizes="(max-width: 600px) 92vw, 560px" ', $tag );
+		}
 		return $tag;
 	}, $content );
-	return $content;
 }
 add_filter( 'the_content', 'hcc_hero_images', 100 );
-
-/** T6.8 — preload the above-the-fold hero on pages that have one. */
-function hcc_preload_hero() {
-	$key = hcc_page_key();
-	if ( ! $key ) return;
-	$reg = hcc_page_registry();
-	if ( empty( $reg[ $key ]['hero'] ) || 'grey-structure-cost-calculator' === $key ) return;
-	$url = get_template_directory_uri() . '/assets/img/' . $reg[ $key ]['hero'] . '.webp?ver=' . HCC_VERSION;
-	echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" type="image/webp" fetchpriority="high">' . "\n";
-}
-add_action( 'wp_head', 'hcc_preload_hero', 2 );

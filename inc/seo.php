@@ -15,6 +15,17 @@ add_filter( 'rest_endpoints', function ( $endpoints ) {
 	return $endpoints;
 } );
 
+/* ---------- v1.13.1 — security headers on every page WordPress serves ----------
+ * No X-Frame-Options / frame-ancestors: /?hcc_embed=calculator must stay
+ * embeddable on other sites. */
+add_action( 'send_headers', function () {
+	if ( headers_sent() ) return;
+	if ( is_ssl() || 0 === strpos( home_url(), 'https://' ) ) header( 'Strict-Transport-Security: max-age=31536000' );
+	header( 'X-Content-Type-Options: nosniff' );
+	header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+	header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
+} );
+
 /* ---------- T2.2 / T2.5 — author enumeration + old slug redirect ---------- */
 add_action( 'template_redirect', function () {
 	// /?author=1 enumeration → home (logged-out visitors only).
