@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <div class="top-accent-bar" aria-hidden="true"></div>
-<a href="#calculator" class="skip-link">Skip to calculator</a>
+<a href="#main-content" class="skip-link">Skip to content</a>
 
 <?php hcc_icon_sprite(); ?>
 

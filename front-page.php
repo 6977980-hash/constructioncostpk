@@ -26,7 +26,7 @@ while ( have_posts() ) : the_post();
 	</div>
 </header>
 
-<main>
+<main id="main-content">
 <?php the_content(); ?>
 </main>
 <?php

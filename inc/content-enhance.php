@@ -190,7 +190,7 @@ function hcc_home_more_guides() {
 		$h .= '<div class="more-col"><h3>' . esc_html( $title ) . '</h3><ul>';
 		foreach ( $reg as $k => $d ) {
 			if ( $d['cluster'] !== $cl || ! hcc_page_exists( $k ) ) continue;
-			$h .= '<li><a href="' . esc_url( hcc_page_url( $k ) ) . '">' . esc_html( $d['label'] ) . '</a>' . ( isset( $figs[ $k ] ) ? ' <span class="hub-fig">' . esc_html( $figs[ $k ] ) . '</span>' : '' ) . '</li>';
+			$h .= '<li><a href="' . esc_url( hcc_page_url( $k ) ) . '">' . esc_html( $d['label'] ) . '</a>' . ( isset( $figs[ $k ] ) ? ' <span class="hub-fig">' . esc_html( $figs[ $k ] ) . '</span>' : '' ) . hcc_slab_site_note( $k ) . '</li>';
 		}
 		$h .= '</ul></div>';
 	}

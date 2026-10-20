@@ -12,7 +12,7 @@ define( 'HCC_BRAND_ALT', 'House Construction Cost Calculator Pakistan' );
 define( 'HCC_OWNER_NAME', 'Ali Ahmad' );
 define( 'HCC_OWNER_EMAIL', '6977980@gmail.com' );
 define( 'HCC_OWNER_SLUG', 'ali-ahmad' );
-define( 'HCC_RATES_DATE_DEFAULT', '2026-10-15' );
+define( 'HCC_RATES_DATE_DEFAULT', '2026-10-20' );
 
 /* --------------------------------------------------------------------------
  * Owner settings (Appearance → Customize → ConstructionCostPK Settings).
@@ -224,7 +224,7 @@ function hcc_seo_meta_map() {
 			'desc'  => '5 Marla (1,125 sq ft) house in ' . $y . ': PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' single storey, PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
 		),
 		'7-marla-house-construction-cost' => array(
-			'title' => '7 Marla House Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' | 1,575 Sq Ft Plot',
+			'title' => '7 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 1575, 2 )['grandTotal'] ) . ' Double',
 			'desc'  => '7 Marla = 1,575 sq ft (175 sq yd). A single storey house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1 )['grandTotal'] ) . ', double storey PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 2 )['grandTotal'] ) . ', grey structure PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1, 'grey' )['grandTotal'] ) . ' (' . $y . ', Lahore).',
 		),
 		'10-marla-house-construction-cost' => array(

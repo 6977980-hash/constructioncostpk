@@ -92,7 +92,7 @@
   // Default material rates come from PHP (hcc_default_calc_rates) so every
   // page, the form fields and this file share one source. The literal values
   // are only a fallback for a page that forgot to print window.hccCalc.
-  var DEFAULT_RATES = (window.hccCalc && window.hccCalc.rates) || { cement: 1500, steel: 275, bricksPer1000: 20000, sand: 90, crush: 130, approvalPerMarla: 18000 };
+  var DEFAULT_RATES = (window.hccCalc && window.hccCalc.rates) || { cement: 1600, steel: 275, bricksPer1000: 20000, sand: 90, crush: 130, approvalPerMarla: 18000 };
 
   // Upper limits for the form — anything above is almost certainly a typo.
   var LIMITS = { plotSqft: 200000, coveredArea: 200000, basementArea: 100000, wallLength: 5000, rooms: 30,

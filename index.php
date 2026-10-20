@@ -6,7 +6,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 get_header();
 ?>
-<main>
+<main id="main-content">
 <div class="static-page">
 	<div class="card">
 		<?php if ( is_404() ) : ?>

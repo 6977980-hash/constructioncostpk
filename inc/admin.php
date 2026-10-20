@@ -7,6 +7,12 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+/** A rate field: a positive number, or empty to fall back to the theme default. */
+function hcc_sanitize_rate( $v ) {
+	$v = str_replace( ',', '', trim( (string) $v ) );
+	return is_numeric( $v ) && (float) $v > 0 ? (string) (float) $v : '';
+}
+
 add_action( 'customize_register', function ( $wp_customize ) {
 	$wp_customize->add_section( 'hcc_settings', array(
 		'title' => 'ConstructionCostPK Settings', 'priority' => 30,
@@ -14,6 +20,12 @@ add_action( 'customize_register', function ( $wp_customize ) {
 	) );
 	$fields = array(
 		'rates_updated' => array( 'Rates last updated (YYYY-MM-DD)', 'text', HCC_RATES_DATE_DEFAULT, 'Shown as "Rates last updated" on every calculator page and used as dateModified of the calculator schema. Update it whenever you change the default rates.' ),
+		'rate_cement' => array( 'Cement rate (PKR per 50 kg bag)', 'number', '', 'Leave empty to use the theme default (PKR 1,600). Every page, title and the calculator use this rate. Update "Rates last updated" too.' ),
+		'rate_steel' => array( 'Steel / saria rate (PKR per kg)', 'number', '', 'Leave empty to use the theme default (PKR 275).' ),
+		'rate_bricksPer1000' => array( 'Bricks rate (PKR per 1,000)', 'number', '', 'Leave empty to use the theme default (PKR 20,000).' ),
+		'rate_sand' => array( 'Sand rate (PKR per cft)', 'number', '', 'Leave empty to use the theme default (PKR 90).' ),
+		'rate_crush' => array( 'Crush / bajri rate (PKR per cft)', 'number', '', 'Leave empty to use the theme default (PKR 130).' ),
+		'rate_approvalPerMarla' => array( 'Map approval fee (PKR per Marla)', 'number', '', 'Leave empty to use the theme default (PKR 18,000).' ),
 		'sources_note' => array( 'Rate sources note (shown in Sources box)', 'textarea', '', 'Example: Cement: Lucky/DG dealer quotes, Lahore, 18 Sep 2026; Steel: Amreli price list 17 Sep 2026; PBS SPI weekly report.' ),
 		'source_cement' => array( 'Source for cement rate', 'text', '', 'e.g. Dealer quote, Ravi Road Lahore, 18 Sep 2026' ),
 		'source_steel' => array( 'Source for steel rate', 'text', '', '' ),
@@ -39,7 +51,7 @@ add_action( 'customize_register', function ( $wp_customize ) {
 		'adsense_pub' => array( 'AdSense publisher ID (pub-XXXXXXXXXXXXXXXX) — creates /ads.txt', 'text', '', 'Only after your AdSense account exists.' ),
 	);
 	foreach ( $fields as $key => $f ) {
-		$sanitize = 'url' === $f[1] ? 'esc_url_raw' : ( 'email' === $f[1] ? 'sanitize_email' : ( 'textarea' === $f[1] ? 'wp_kses_post' : 'sanitize_text_field' ) );
+		$sanitize = 'url' === $f[1] ? 'esc_url_raw' : ( 'email' === $f[1] ? 'sanitize_email' : ( 'textarea' === $f[1] ? 'wp_kses_post' : ( 'number' === $f[1] ? 'hcc_sanitize_rate' : 'sanitize_text_field' ) ) );
 		$wp_customize->add_setting( 'hcc_' . $key, array( 'default' => $f[2], 'sanitize_callback' => $sanitize, 'transport' => 'refresh' ) );
 		$wp_customize->add_control( 'hcc_' . $key, array( 'label' => $f[0], 'section' => 'hcc_settings', 'type' => $f[1], 'description' => $f[3] ) );
 	}

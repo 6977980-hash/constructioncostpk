@@ -319,6 +319,12 @@ add_shortcode( 'hcc_market_prices', 'hcc_sc_market_prices' );
 /* --------------------------------------------------------------------------
  * L4 — hub lists. Every hub lists all of its published spokes.
  * ------------------------------------------------------------------------ */
+/** v1.13.0: next to any lanter cost figure, point to the sister roof slab calculator. */
+function hcc_slab_site_note( $key ) {
+	if ( 'lanter-roof-slab-cost-pakistan' !== $key || ! defined( 'HCC_SLAB_SITE' ) ) return '';
+	return ' <span class="hub-sum">· Detailed slab estimates: <a href="' . esc_url( HCC_SLAB_SITE ) . '" rel="noopener" target="_blank">SlabCostCalculator.com</a></span>';
+}
+
 function hcc_sc_hub_list( $atts ) {
 	$a = shortcode_atts( array( 'cluster' => 'plot' ), $atts );
 	$figs = hcc_headline_figures();
@@ -327,7 +333,7 @@ function hcc_sc_hub_list( $atts ) {
 		if ( $d['cluster'] !== $a['cluster'] || 'hub' === $d['type'] || ! hcc_page_exists( $key ) ) continue;
 		$h .= '<li><a href="' . esc_url( hcc_page_url( $key ) ) . '"><strong>' . esc_html( $d['label'] ) . '</strong></a>'
 			. ( isset( $figs[ $key ] ) ? ' <span class="hub-fig">' . esc_html( $figs[ $key ] ) . '</span>' : '' )
-			. '<br><span class="hub-sum">' . esc_html( $d['card'] ) . '</span></li>';
+			. '<br><span class="hub-sum">' . esc_html( $d['card'] ) . '</span>' . hcc_slab_site_note( $key ) . '</li>';
 	}
 	return $h . '</ul>';
 }

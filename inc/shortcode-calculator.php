@@ -230,11 +230,20 @@ function hcc_format_pkr( $n ) {
  * Default material rates — the ONE source for every page, the calculator's
  * form fields and calculator.js (passed in window.hccCalc.rates).
  * v1.9.0 (reviewed 15 Oct 2026): steel 280 → 275 per kg (dealer lists 260–277
- * for Grade 60 in Oct 2026, plus wastage and binding wire); cement 1,500 per
- * bag (Aug–Oct 2026 lists 1,375–1,610); bricks 20,000 per 1,000 (18,000–22,000).
+ * for Grade 60 in Oct 2026, plus wastage and binding wire); bricks 20,000 per
+ * 1,000 (18,000–22,000).
+ * v1.13.0 (reviewed 20 Oct 2026): cement 1,500 → 1,600 per bag (PBS weekly
+ * average, week to 8 Oct 2026: north 1,613, Lahore 1,630, Islamabad 1,611).
+ * Each rate can be overridden in Appearance → Customize → ConstructionCostPK
+ * Settings; an empty field keeps the value below.
  */
 function hcc_default_calc_rates() {
-	return array( 'cement' => 1500, 'steel' => 275, 'bricksPer1000' => 20000, 'sand' => 90, 'crush' => 130, 'approvalPerMarla' => 18000 );
+	$rates = array( 'cement' => 1600, 'steel' => 275, 'bricksPer1000' => 20000, 'sand' => 90, 'crush' => 130, 'approvalPerMarla' => 18000 );
+	foreach ( $rates as $k => $v ) {
+		$o = hcc_opt( 'rate_' . $k, '' );
+		if ( is_numeric( $o ) && (float) $o > 0 ) $rates[ $k ] = (float) $o;
+	}
+	return $rates;
 }
 
 /** Allowed values of the shortcode's variant attribute. */
@@ -556,7 +565,7 @@ function house_cost_calculator_shortcode( $atts ) {
 						<label for="plot-size">Plot Size</label>
 						<div class="row-inline">
 							<input type="number" id="plot-size" name="plot-size" min="0.5" step="0.5" value="<?php echo esc_attr( $hcc_preset[0] ); ?>" inputmode="decimal">
-							<select id="plot-unit" name="plot-unit">
+							<select id="plot-unit" name="plot-unit" aria-label="Plot size unit">
 								<option value="marla"<?php selected( $hcc_preset[1], 'marla' ); ?>>Marla</option>
 								<option value="kanal"<?php selected( $hcc_preset[1], 'kanal' ); ?>>Kanal</option>
 								<option value="sqyd"<?php selected( $hcc_preset[1], 'sqyd' ); ?>>Sq Yd</option>
