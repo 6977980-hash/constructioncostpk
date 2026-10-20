@@ -151,7 +151,13 @@ function hcc_sc_plot_tables( $atts ) {
 			$c = hcc_estimate( $plot, $s, 'complete', 'standard', $city ); $g = hcc_estimate( $plot, $s, 'grey', 'standard', $city );
 			$rows[] = array( $names[ $s ], number_format( $c['covered'] ) . ' sq ft', hcc_pkr( $g['grandTotal'] ), hcc_pkr( $c['grandTotal'] ) );
 		}
-		return hcc_table( array( 'Option', 'Covered area', 'Grey structure', 'Complete (standard)' ), $rows );
+		$note = '';
+		if ( count( $rows ) > 1 ) {
+			// v1.13.2: readers expect a second floor to be cheaper per sq ft; say why it is not.
+			$more = hcc_page_exists( 'double-storey-house-construction-cost' ) ? ' <a href="' . esc_url( hcc_page_url( 'double-storey-house-construction-cost' ) ) . '">Double storey cost guide</a>.' : '';
+			$note = '<p class="hint">Each extra storey costs about 3% more per sq ft: bigger columns and footings, more steel, a staircase, scaffolding and carrying material up. What you save is land and plot cost, not construction per sq ft.' . $more . '</p>';
+		}
+		return hcc_table( array( 'Option', 'Covered area', 'Grey structure', 'Complete (standard)' ), $rows ) . $note;
 	}
 	$rows = array();
 	$g = hcc_estimate( $plot, $st, 'grey', 'standard', $city );
