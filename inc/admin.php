@@ -46,7 +46,7 @@ add_action( 'customize_register', function ( $wp_customize ) {
 		'social_x' => array( 'X (Twitter) profile URL', 'url', '', '' ),
 		'social_instagram' => array( 'Instagram URL', 'url', '', '' ),
 		'social_pinterest' => array( 'Pinterest URL', 'url', '', '' ),
-		'ga4_id' => array( 'Google Analytics 4 Measurement ID (G-XXXXXXX)', 'text', '', 'Leave empty if you use Site Kit instead.' ),
+		'ga4_id' => array( 'Google Analytics 4 Measurement ID (G-XXXXXXX)', 'text', '', 'Leave empty to use the site\'s own ID (G-SZFCLBZJ9S).' ),
 		'clarity_id' => array( 'Microsoft Clarity project ID', 'text', '', '' ),
 		'adsense_pub' => array( 'AdSense publisher ID (pub-XXXXXXXXXXXXXXXX) — creates /ads.txt', 'text', '', 'Only after your AdSense account exists.' ),
 	);
