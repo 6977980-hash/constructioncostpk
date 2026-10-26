@@ -4,7 +4,7 @@
  *   E4  contact form (no plugin needed; mails the site owner)
  *   E6  "Was this estimate close?" feedback, stored privately in wp-admin
  *   T7.2 GA4 / Microsoft Clarity with calculator + PDF events
- *   T7.5 cookie consent (Google Consent Mode v2, denied by default)
+ *   T7.5 cookie consent (Google Consent Mode v2; denied by default in EEA/UK/CH)
  *   X1  embeddable calculator widget (/?hcc_embed=calculator)
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
