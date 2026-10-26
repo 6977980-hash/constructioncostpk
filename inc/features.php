@@ -4,7 +4,7 @@
  *   E4  contact form (no plugin needed; mails the site owner)
  *   E6  "Was this estimate close?" feedback, stored privately in wp-admin
  *   T7.2 GA4 / Microsoft Clarity with calculator + PDF events
- *   T7.5 cookie consent (Google Consent Mode v2, denied by default)
+ *   T7.5 cookie consent (Google Consent Mode v2; denied by default in EEA/UK/CH)
  *   X1  embeddable calculator widget (/?hcc_embed=calculator)
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -139,27 +139,32 @@ add_action( 'manage_hcc_feedback_posts_custom_column', function ( $col, $id ) {
 
 /* ==========================================================================
  * T7.2 / T7.5 — analytics behind a cookie-consent notice.
- * Nothing is loaded unless the owner enters a GA4 or Clarity ID in the
- * Customizer. Consent Mode v2 defaults to "denied".
+ * GA4 uses the site's own ID unless another is entered in the Customizer.
+ * Consent Mode v2 defaults to "denied" in the EEA, UK and Switzerland and to
+ * "granted" elsewhere; the consent bar lets any visitor decline.
  * ======================================================================== */
+define( 'HCC_GA4_DEFAULT', 'G-SZFCLBZJ9S' );
 function hcc_analytics_ids() {
-	$ga = strtoupper( preg_replace( '/[^A-Z0-9-]/i', '', (string) hcc_opt( 'ga4_id' ) ) );
+	$ga = strtoupper( preg_replace( '/[^A-Z0-9-]/i', '', (string) ( hcc_opt( 'ga4_id' ) ?: HCC_GA4_DEFAULT ) ) );
 	$cl = preg_replace( '/[^a-z0-9]/i', '', (string) hcc_opt( 'clarity_id' ) );
 	return array( 'ga4' => ( 0 === strpos( $ga, 'G-' ) ) ? $ga : '', 'clarity' => $cl );
 }
 add_action( 'wp_head', function () {
-	if ( is_admin() || get_query_var( 'hcc_embed' ) ) return;
+	if ( is_admin() || get_query_var( 'hcc_embed' ) || current_user_can( 'edit_posts' ) ) return;
 	$ids = hcc_analytics_ids();
 	if ( ! $ids['ga4'] && ! $ids['clarity'] ) return;
-	echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});";
-	echo "try{if(localStorage.getItem('hcc_consent')==='granted'){gtag('consent','update',{analytics_storage:'granted'});}}catch(e){}";
+	$eea = array( 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH' );
+	echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}";
+	echo "gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:" . wp_json_encode( $eea ) . ",wait_for_update:500});";
+	echo "gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});";
+	echo "try{var c=localStorage.getItem('hcc_consent');if(c==='granted'||c==='denied'){gtag('consent','update',{analytics_storage:c});}}catch(e){}";
 	if ( $ids['ga4'] ) echo "gtag('js',new Date());gtag('config'," . wp_json_encode( $ids['ga4'] ) . ");";
 	echo "</script>\n";
 	if ( $ids['ga4'] ) echo '<script async src="https://www.googletagmanager.com/gtag/js?id=' . esc_attr( $ids['ga4'] ) . '"></script>' . "\n";
 }, 3 );
 
 add_action( 'wp_footer', function () {
-	if ( is_admin() || get_query_var( 'hcc_embed' ) ) return;
+	if ( is_admin() || get_query_var( 'hcc_embed' ) || current_user_can( 'edit_posts' ) ) return;
 	$ids = hcc_analytics_ids();
 	if ( ! $ids['ga4'] && ! $ids['clarity'] ) return;
 	?>
