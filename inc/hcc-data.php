@@ -220,11 +220,11 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Grey structure costs about PKR ' . number_format( round( $g ) ) . ' per sq ft in Lahore (' . $y . ') — PKR ' . hcc_lakh_crore( $e5g['grandTotal'] ) . ' for a 5 Marla house. Free calculator with materials & PDF.',
 		),
 		'5-marla-house-construction-cost' => array(
-			'title' => '5 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 1125, 2 )['grandTotal'] ) . ' Double',
+			'title' => '5 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' (Calculator)',
 			'desc'  => '5 Marla (1,125 sq ft) house in ' . $y . ': PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1 )['grandTotal'] ) . ' single storey, PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 1125, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
 		),
 		'7-marla-house-construction-cost' => array(
-			'title' => '7 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 1575, 2 )['grandTotal'] ) . ' Double',
+			'title' => '7 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 1575, 1 )['grandTotal'] ) . ' (Calculator)',
 			'desc'  => '7 Marla = 1,575 sq ft (175 sq yd). A single storey house costs about PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1 )['grandTotal'] ) . ', double storey PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 2 )['grandTotal'] ) . ', grey structure PKR ' . hcc_lakh_crore( hcc_estimate( 1575, 1, 'grey' )['grandTotal'] ) . ' (' . $y . ', Lahore).',
 		),
 		'10-marla-house-construction-cost' => array(
@@ -316,8 +316,8 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Cement ki ek bori: PKR ' . number_format( hcc_default_calc_rates()['cement'] ) . ' planning rate, checked ' . hcc_rates_date_human() . '. Brands (Lucky, DG, Bestway, Maple Leaf) and bags needed for 3 Marla to 1 Kanal houses.',
 		),
 		'steel-saria-rate-today' => array(
-			'title' => 'Saria Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per 40 Kg (' . hcc_rates_month() . ')',
-			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per 40 kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton (Grade 60, ' . hcc_rates_date_human() . '). Steel for 5 Marla to 1 Kanal.',
+			'title' => 'Sariya Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per Man, Sut-wise (' . hcc_rates_month() . ')',
+			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per man (40 kg), PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton. 3, 4, 5 sut rate per foot & per 40 ft bar (Grade 60, ' . hcc_rates_date_human() . ').',
 		),
 		'pakistan-construction-cost-index' => array(
 			'title' => 'Pakistan Construction Cost Index ' . date_i18n( 'F Y' ) . ' (City-wise)',
