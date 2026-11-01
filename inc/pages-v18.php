@@ -282,6 +282,9 @@ HTML
 
 <h2>Aaj ka sariya rate (today's steel rate)</h2>
 [hcc_steel_rate_table]
+
+<h2>Sut-wise sariya rate (3, 4, 5, 6 and 8 sut)</h2>
+[hcc_steel_sut_table]
 <p class="hint">This is a delivered planning rate for Grade 60 bars including typical wastage and binding wire, checked against mill and dealer price lists. Ex-mill prices are usually a little lower and change often, so confirm with your dealer on the day you buy.</p>
 
 <h2>All material rates used in our calculator</h2>
@@ -416,12 +419,16 @@ function hcc_material_faq_items( $m ) {
 			array( 'q' => 'How much steel is needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( $g5['qty']['steelKg'] ) ) . ' kg for a single storey 5 Marla house of ' . number_format( $g5['covered'] ) . ' sq ft at standard quality (' . $b['steelKg'] . ' kg per sq ft). A double storey 5 Marla house (' . number_format( $g5d['covered'] ) . ' sq ft) needs about ' . number_format( round( $g5d['qty']['steelKg'] ) ) . ' kg.' ),
 			array( 'q' => 'Grade 40 or Grade 60 steel — which is better for a house?', 'a' => 'Grade 60 (about 420 MPa yield strength) is the standard for houses today and is what most structural drawings specify. Use the grade your structural engineer specifies.' ),
 			array( 'q' => 'Saria ka rate aaj kal kya hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['steel'] ) . ' per kg (Grade 60) hai. Asal rate brand aur sheher ke hisaab se badalta hai — khareedne se pehle dealer se aaj ka rate confirm karein.' ),
+			array( 'q' => '1 man sariya kitne ka hai?', 'a' => '1 man 40 kg ka hota hai, is liye PKR ' . number_format( $r['steel'] ) . ' per kg ke hisaab se 1 man sariya taqreeban PKR ' . number_format( $r['steel'] * 40 ) . ' ka, aur 1 ton (1,000 kg) taqreeban PKR ' . number_format( $r['steel'] * 1000 ) . ' ka banta hai.' ),
+			array( 'q' => '4 sut sariya ka rate kya hai?', 'a' => '4 sut (12 mm) sariya ka wazan taqreeban ' . hcc_num( hcc_steel_sut_kg_ft( 12 ), 2 ) . ' kg per foot hai, yani 40 foot ka ek sariya taqreeban ' . hcc_num( hcc_steel_sut_kg_ft( 12 ) * 40, 1 ) . ' kg ka aur PKR ' . number_format( round( hcc_steel_sut_kg_ft( 12 ) * 40 * $r['steel'], -1 ) ) . ' ka. 3 sut (10 mm) ka 40 foot sariya taqreeban PKR ' . number_format( round( hcc_steel_sut_kg_ft( 10 ) * 40 * $r['steel'], -1 ) ) . ' ka hai. Poori list upar sut-wise table mein hai.' ),
+			array( 'q' => 'Lanter mein kitna sariya lagta hai?', 'a' => '5 inch ke aam lanter mein taqreeban ' . hcc_lanter_defaults()['steel'] . ' kg sariya per sq ft lagta hai, yani 1,000 sq ft chhat mein taqreeban ' . number_format( round( hcc_lanter_defaults()['steel'] * 1000 ) ) . ' kg. Apni chhat ka hisaab hamare <a href="' . esc_url( home_url( '/lanter-roof-slab-cost-pakistan/' ) ) . '">lanter calculator</a> ya sister site <a href="' . esc_url( HCC_SLAB_SITE ) . '">SlabCostCalculator.com</a> par lagayein.' ),
 		);
 	}
 	return array(
 		array( 'q' => 'What is the cement rate per bag in Pakistan today?', 'a' => 'ConstructionCostPK uses a planning rate of PKR ' . number_format( $r['cement'] ) . ' per 50 kg bag (rates last updated ' . hcc_rates_date_human() . '). Actual prices vary by brand, city and dealer, so ask two or three dealers for today\'s quote.' ),
 		array( 'q' => 'How many cement bags are needed for a 5 Marla house?', 'a' => 'About ' . number_format( round( $g5['qty']['cementBags'] ) ) . ' bags for the grey structure of a single storey 5 Marla house (' . $b['cementBags'] . ' bags per sq ft of covered area at standard quality), or about ' . number_format( round( $g5d['qty']['cementBags'] ) ) . ' bags for a double storey one.' ),
 		array( 'q' => 'Which cement is best for foundations in salty soil?', 'a' => 'Sulphate-resisting cement (SRC) is normally recommended for foundations in soil or groundwater with high sulphate content, such as in parts of coastal Karachi. Follow your structural engineer\'s specification.' ),
+		array( 'q' => '5 marla ghar mein kitni bori cement lagti hai?', 'a' => 'Single storey 5 marla ghar ke grey structure mein taqreeban ' . number_format( round( $g5['qty']['cementBags'] ) ) . ' bori cement lagti hai, aur double storey mein taqreeban ' . number_format( round( $g5d['qty']['cementBags'] ) ) . ' bori. PKR ' . number_format( $r['cement'] ) . ' per bori ke hisaab se yeh taqreeban ' . hcc_format_pkr( round( $g5['qty']['cementBags'] ) * $r['cement'] ) . ' (single storey) banta hai.' ),
 		array( 'q' => 'Cement ki ek bori kitne ki hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['cement'] ) . ' per 50 kg bori hai. Brand aur sheher ke hisaab se asal qeemat alag hoti hai — dealer se aaj ka rate zaroor poochein.' ),
 	);
 }
@@ -429,7 +436,7 @@ function hcc_material_faq_render( $m ) {
 	$items = hcc_material_faq_items( $m );
 	$slug = 'steel' === $m ? 'steel-saria-rate-today' : 'cement-rate-today-pakistan';
 	$main = array();
-	foreach ( $items as $i ) $main[] = array( '@type' => 'Question', 'name' => $i['q'], 'acceptedAnswer' => array( '@type' => 'Answer', 'text' => $i['a'] ) );
+	foreach ( $items as $i ) $main[] = array( '@type' => 'Question', 'name' => $i['q'], 'acceptedAnswer' => array( '@type' => 'Answer', 'text' => wp_strip_all_tags( $i['a'] ) ) );
 	$schema = array( '@context' => 'https://schema.org', '@type' => 'FAQPage', '@id' => home_url( '/' . $slug . '/' ) . '#faq', 'inLanguage' => 'en-US', 'mainEntity' => $main );
 	return hcc_render_faq_custom( $items, 'Quick answers about ' . ( 'steel' === $m ? 'steel (saria)' : 'cement' ) . ' prices and quantities in Pakistan.' )
 		. '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ) . '</script>';

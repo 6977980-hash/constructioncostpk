@@ -195,7 +195,9 @@ function hcc_sc_size_box( $atts ) {
 	}
 	return '<p class="size-answer"><strong>' . esc_html( $label ) . ' = ' . number_format( $sq ) . ' sq ft</strong> (' . hcc_num( $sq / 9, 1 ) . ' sq yd or gaz, about ' . hcc_num( $sq * 0.09290304 ) . ' m², ' . hcc_num( $m / 20, 2 ) . ' Kanal) under the common 225 sq ft Marla.'
 		. ( isset( $dims[ $k ] ) ? ' Common plot dimensions: ' . esc_html( $dims[ $k ] ) . '.' : '' ) . ' Under the older 272.25 sq ft Marla the same plot is ' . hcc_num( $m * 272.25, 2 ) . ' sq ft.</p>'
-		. hcc_table( array( 'Marla standard', esc_html( $label ), 'Square yards', 'Square metres' ), $rows );
+		. hcc_table( array( 'Marla standard', esc_html( $label ), 'Square yards', 'Square metres' ), $rows )
+		. hcc_sc_area_converter( array( 'value' => $m ) )
+		. '<p class="hint">Need every size in one table? See our <a href="' . esc_url( home_url( '/marla-kanal-standards-pakistan/' ) ) . '">Marla, Kanal &amp; sq ft conversion guide</a>.</p>';
 }
 add_shortcode( 'hcc_size_box', 'hcc_sc_size_box' );
 
@@ -214,11 +216,13 @@ function hcc_sc_marla_conversions() {
 add_shortcode( 'hcc_marla_conversions', 'hcc_sc_marla_conversions' );
 
 /** [hcc_area_converter] — converts between Marla, Kanal, sq ft, sq yd, m² and acres in the browser. */
-function hcc_sc_area_converter() {
+function hcc_sc_area_converter( $atts = array() ) {
+	$a = shortcode_atts( array( 'value' => 7 ), $atts );
+	$start = max( 0, (float) $a['value'] );
 	$opts = '';
 	foreach ( hcc_marla_standards() as $per => $name ) $opts .= '<option value="' . esc_attr( $per ) . '">' . esc_html( $name ) . '</option>';
 	$h = '<div class="area-converter card" id="area-converter"><h3>Marla, Kanal &amp; square feet converter</h3><div class="row-inline">'
-		. '<label>Amount <input type="number" id="ac-val" value="7" min="0" step="any" inputmode="decimal"></label>'
+		. '<label>Amount <input type="number" id="ac-val" value="' . esc_attr( hcc_num( $start, 2 ) ) . '" min="0" step="any" inputmode="decimal"></label>'
 		. '<label>Unit <select id="ac-unit"><option value="marla">Marla</option><option value="kanal">Kanal</option><option value="sqft">Sq ft</option><option value="sqyd">Sq yd (gaz)</option><option value="sqm">Square metres</option><option value="acre">Acre</option></select></label>'
 		. '<label>Marla standard <select id="ac-std">' . $opts . '</select></label></div>'
 		. '<output id="ac-out" for="ac-val ac-unit ac-std" aria-live="polite"></output></div>';
@@ -252,11 +256,31 @@ function hcc_sc_steel_rate_table() {
 	$r = hcc_default_calc_rates()['steel'];
 	return hcc_table( array( 'Grade 60 saria', 'Planning rate', 'Checked on' ), array(
 		array( 'Per kg', 'PKR ' . number_format( $r ), esc_html( hcc_rates_date_human() ) ),
-		array( 'Per 40 kg (1 maund)', 'PKR ' . number_format( $r * 40 ), esc_html( hcc_rates_date_human() ) ),
+		array( 'Per 40 kg (1 man / maund)', 'PKR ' . number_format( $r * 40 ), esc_html( hcc_rates_date_human() ) ),
 		array( 'Per ton (1,000 kg)', 'PKR ' . number_format( $r * 1000 ), esc_html( hcc_rates_date_human() ) ),
 	) );
 }
 add_shortcode( 'hcc_steel_rate_table', 'hcc_sc_steel_rate_table' );
+
+/** Saria sizes by sut (1 sut = 1/8 inch): mm diameter and kg per foot (D² / 533). */
+function hcc_steel_sut_sizes() {
+	return array( 3 => 10, 4 => 12, 5 => 16, 6 => 20, 8 => 25 );
+}
+function hcc_steel_sut_kg_ft( $mm ) {
+	return $mm * $mm / 533;
+}
+/** [hcc_steel_sut_table] — sut-wise saria rate: per foot, per 40 ft bar and per ton, from the planning rate. */
+function hcc_sc_steel_sut_table() {
+	$r = hcc_default_calc_rates()['steel'];
+	$rows = array();
+	foreach ( hcc_steel_sut_sizes() as $sut => $mm ) {
+		$kg = hcc_steel_sut_kg_ft( $mm );
+		$rows[] = array( $sut . ' sut (' . $mm . ' mm)', hcc_num( $kg, 2 ) . ' kg', 'PKR ' . number_format( round( $kg * $r ) ), hcc_num( $kg * 40, 1 ) . ' kg', 'PKR ' . number_format( round( $kg * 40 * $r, -1 ) ), number_format( round( 1000 / ( $kg * 40 ) ) ) );
+	}
+	return hcc_table( array( 'Saria size', 'Weight per ft', 'Rate per ft', 'One 40 ft bar', 'Price per 40 ft bar', 'Bars in 1 ton' ), $rows )
+		. '<p class="hint">Worked out from the Grade 60 planning rate of PKR ' . number_format( $r ) . ' per kg (' . esc_html( hcc_rates_date_human() ) . ') and the standard weight D² / 533 kg per ft. Dealers sell by weight, so the per-bar price moves with the per-kg rate; thin 3 sut bars are sometimes a little dearer per kg. Bars are also sold in 30 ft and 60 ft lengths.</p>';
+}
+add_shortcode( 'hcc_steel_sut_table', 'hcc_sc_steel_sut_table' );
 
 /* --------------------------------------------------------------------------
  * Material-page tables (cement / steel) — quantities per plot size and the
@@ -528,6 +552,7 @@ function hcc_roman_urdu_faq_items( $variant ) {
 		$c = hcc_estimate( $s[1], $s[2] ); $g = hcc_estimate( $s[1], $s[2], 'grey' );
 		return array(
 			array( 'q' => ucfirst( $s[0] ) . ' ghar banane mein kitna kharcha aata hai?', 'a' => 'Lahore ke standard rates par ' . $s[0] . ' ka ' . ( 1 === $s[2] ? 'single storey' : 'double storey' ) . ' mukammal ghar taqreeban PKR ' . hcc_lakh_crore( $c['grandTotal'] ) . ' mein banta hai, aur sirf grey structure taqreeban PKR ' . hcc_lakh_crore( $g['grandTotal'] ) . ' mein. Apne sheher aur quality ke hisaab se upar wala calculator istemal karein.' ),
+			array( 'q' => ucfirst( $s[0] ) . ' ' . ( 1 === $s[2] ? 'double' : 'single' ) . ' storey ghar banane ka kharcha kitna hai?', 'a' => ( 1 === $s[2] ? 'Double storey' : 'Single storey' ) . ' ' . $s[0] . ' ghar standard quality par taqreeban PKR ' . hcc_lakh_crore( hcc_estimate( $s[1], 1 === $s[2] ? 2 : 1 )['grandTotal'] ) . ' mein mukammal hota hai (grey structure taqreeban PKR ' . hcc_lakh_crore( hcc_estimate( $s[1], 1 === $s[2] ? 2 : 1, 'grey' )['grandTotal'] ) . '). Calculator mein "Storeys" badal kar apna hisaab dekhein.' ),
 			array( 'q' => ucfirst( $s[0] ) . ' ghar ke liye kitna cement aur saria chahiye?', 'a' => 'Taqreeban ' . number_format( round( $g['qty']['cementBags'] ) ) . ' bori cement, ' . number_format( round( $g['qty']['steelKg'] ) ) . ' kg saria aur ' . number_format( round( $g['qty']['bricks'] ) ) . ' eentein (standard quality, ' . number_format( $c['covered'] ) . ' sq ft covered area). Design aur quality ke saath yeh miqdaar badal sakti hai.' ),
 		);
 	}
@@ -544,6 +569,8 @@ function hcc_roman_urdu_faq_items( $variant ) {
 		return array(
 			array( 'q' => '1 marla kitne square feet ka hota hai?', 'a' => 'Zyada tar societies (LDA, DHA, Bahria Town) mein 1 marla 225 sq ft ka hota hai, lekin Karachi/cantonment mein 250 sq ft aur purane revenue record (patwari) mein 272.25 sq ft bhi istemal hota hai.' ),
 			array( 'q' => '1 kanal mein kitne marla hote hain?', 'a' => '1 kanal hamesha 20 marla ka hota hai — lekin marla ke standard ke hisaab se 1 kanal 4,500 se 5,445 sq ft tak ho sakta hai.' ),
+			array( 'q' => '7 marla mein kitne square feet aur kitne gaz hote hain?', 'a' => '225 sq ft wale marla se 7 marla = 1,575 sq ft = 175 gaz (sq yd). Purane 272.25 sq ft wale marla se 7 marla = 1,905.75 sq ft. Kisi bhi size ke liye upar wala converter istemal karein.' ),
+			array( 'q' => '1 marla kitne gaz ka hota hai?', 'a' => '225 sq ft wala 1 marla 25 gaz (sq yd) ka hota hai, aur 272.25 sq ft wala 1 marla 30.25 gaz ka.' ),
 		);
 	}
 	if ( 'grey-structure' === $variant ) {
