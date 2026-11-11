@@ -150,7 +150,7 @@ function hcc_page_registry() {
 		'construction-cost-guides' => array( 'cluster' => 'plot', 'type' => 'hub', 'label' => 'All Cost Guides (Plot Sizes)', 'card' => 'Every plot-size guide in one place' ),
 		'construction-cost-by-city' => array( 'cluster' => 'city', 'type' => 'hub', 'label' => 'Construction Cost by City', 'card' => 'Per sq ft rates for 11 Pakistani cities' ),
 		'construction-cost-lahore' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Lahore', 'card' => 'LDA, DHA & Bahria — Lahore per sq ft rates' ),
-		'construction-cost-karachi' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Karachi', 'card' => '120 / 240 / 400 sq yd plots, SBCA approvals' ),
+		'construction-cost-karachi' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Karachi', 'card' => '80 / 120 / 240 / 400 sq yd plots, SBCA approvals' ),
 		'120-sq-yard-house-construction-cost-karachi' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => '120 Sq Yard House Cost (Karachi)', 'card' => '1,080 sq ft plot — ground + 1 budget' ),
 		'construction-cost-islamabad' => array( 'cluster' => 'city', 'type' => 'calculator', 'label' => 'Construction Cost in Islamabad', 'card' => 'CDA sector plot sizes & per sq ft rates' ),
 		'construction-material-rates' => array( 'cluster' => 'material', 'type' => 'hub', 'label' => 'Construction Material Rates', 'card' => 'Cement, steel, bricks, sand & crush rates' ),
@@ -284,7 +284,7 @@ function hcc_seo_meta_map() {
 			'desc'  => 'ConstructionCostPK disclaimer: our construction cost figures are planning estimates, not quotations. Always confirm with a licensed contractor or engineer.',
 		),
 		'3-marla-house-construction-cost' => array(
-			'title' => '3 Marla House Cost ' . $y . ': PKR ' . hcc_title_amount( hcc_estimate( 675, 1 )['grandTotal'] ) . ' Single, ' . hcc_title_amount( hcc_estimate( 675, 2 )['grandTotal'] ) . ' Double',
+			'title' => '3 Marla House Construction Cost ' . $y . ': ~PKR ' . hcc_title_amount( hcc_estimate( 675, 1 )['grandTotal'] ) . ' (Calculator)',
 			'desc'  => '3 Marla (675 sq ft) house in ' . $y . ': about PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1 )['grandTotal'] ) . ' single storey or ' . hcc_lakh_crore( hcc_estimate( 675, 2 )['grandTotal'] ) . ' double, grey structure from PKR ' . hcc_lakh_crore( hcc_estimate( 675, 1, 'grey' )['grandTotal'] ) . '. Lahore rates + calculator.',
 		),
 		'4-marla-house-construction-cost' => array(
@@ -297,7 +297,7 @@ function hcc_seo_meta_map() {
 		),
 		'construction-cost-karachi' => array(
 			'title' => 'Construction Cost in Karachi ' . $y . ': Per Sq Ft & Per Sq Yd Plots',
-			'desc'  => 'Building in Karachi costs about PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'karachi' ) ) ) . '/sq ft complete, PKR ' . number_format( round( hcc_rate_per_sqft( 'grey', 'karachi' ) ) ) . '/sq ft grey (' . $y . '). 120, 240 & 400 sq yd house costs + free calculator.',
+			'desc'  => 'Building in Karachi costs about PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'karachi' ) ) ) . '/sq ft complete, PKR ' . number_format( round( hcc_rate_per_sqft( 'grey', 'karachi' ) ) ) . '/sq ft grey (' . $y . '). 80, 120, 240 & 400 sq yd house costs + free calculator.',
 		),
 		'construction-cost-islamabad' => array(
 			'title' => 'Islamabad Construction Cost ' . $y . ': PKR ' . number_format( round( hcc_rate_per_sqft( 'complete', 'islamabad' ) ) ) . '/Sq Ft (CDA, DHA)',
@@ -317,7 +317,7 @@ function hcc_seo_meta_map() {
 		),
 		'steel-saria-rate-today' => array(
 			'title' => 'Sariya Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per Man, Sut-wise (' . hcc_rates_month() . ')',
-			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per man (40 kg), PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton. 3, 4, 5 sut rate per foot & per 40 ft bar (Grade 60, ' . hcc_rates_date_human() . ').',
+			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per man (40 kg), PKR ' . number_format( hcc_default_calc_rates()['steel'] * 50 ) . ' per 50 kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton. 3, 4, 5 sut rate per foot & per 40 ft bar (Grade 60, ' . hcc_rates_date_human() . ').',
 		),
 		'pakistan-construction-cost-index' => array(
 			'title' => 'Pakistan Construction Cost Index ' . date_i18n( 'F Y' ) . ' (City-wise)',

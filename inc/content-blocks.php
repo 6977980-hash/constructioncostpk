@@ -257,6 +257,7 @@ function hcc_sc_steel_rate_table() {
 	return hcc_table( array( 'Grade 60 saria', 'Planning rate', 'Checked on' ), array(
 		array( 'Per kg', 'PKR ' . number_format( $r ), esc_html( hcc_rates_date_human() ) ),
 		array( 'Per 40 kg (1 man / maund)', 'PKR ' . number_format( $r * 40 ), esc_html( hcc_rates_date_human() ) ),
+		array( 'Per 50 kg', 'PKR ' . number_format( $r * 50 ), esc_html( hcc_rates_date_human() ) ),
 		array( 'Per ton (1,000 kg)', 'PKR ' . number_format( $r * 1000 ), esc_html( hcc_rates_date_human() ) ),
 	) );
 }
@@ -554,6 +555,7 @@ function hcc_roman_urdu_faq_items( $variant ) {
 			array( 'q' => ucfirst( $s[0] ) . ' ghar banane mein kitna kharcha aata hai?', 'a' => 'Lahore ke standard rates par ' . $s[0] . ' ka ' . ( 1 === $s[2] ? 'single storey' : 'double storey' ) . ' mukammal ghar taqreeban PKR ' . hcc_lakh_crore( $c['grandTotal'] ) . ' mein banta hai, aur sirf grey structure taqreeban PKR ' . hcc_lakh_crore( $g['grandTotal'] ) . ' mein. Apne sheher aur quality ke hisaab se upar wala calculator istemal karein.' ),
 			array( 'q' => ucfirst( $s[0] ) . ' ' . ( 1 === $s[2] ? 'double' : 'single' ) . ' storey ghar banane ka kharcha kitna hai?', 'a' => ( 1 === $s[2] ? 'Double storey' : 'Single storey' ) . ' ' . $s[0] . ' ghar standard quality par taqreeban PKR ' . hcc_lakh_crore( hcc_estimate( $s[1], 1 === $s[2] ? 2 : 1 )['grandTotal'] ) . ' mein mukammal hota hai (grey structure taqreeban PKR ' . hcc_lakh_crore( hcc_estimate( $s[1], 1 === $s[2] ? 2 : 1, 'grey' )['grandTotal'] ) . '). Calculator mein "Storeys" badal kar apna hisaab dekhein.' ),
 			array( 'q' => ucfirst( $s[0] ) . ' ghar ke liye kitna cement aur saria chahiye?', 'a' => 'Taqreeban ' . number_format( round( $g['qty']['cementBags'] ) ) . ' bori cement, ' . number_format( round( $g['qty']['steelKg'] ) ) . ' kg saria aur ' . number_format( round( $g['qty']['bricks'] ) ) . ' eentein (standard quality, ' . number_format( $c['covered'] ) . ' sq ft covered area). Design aur quality ke saath yeh miqdaar badal sakti hai.' ),
+			array( 'q' => ucfirst( $s[0] ) . ' ghar ka lanter kitne ka padta hai?', 'a' => 'Single storey ' . $s[0] . ' ghar ka lanter taqreeban ' . number_format( hcc_plot_lanter_figures( $s[1] / 225 )['area'] ) . ' sq ft ka hota hai. 5 inch (1:2:4) lanter ka sirf material taqreeban PKR ' . hcc_lakh_crore( hcc_plot_lanter_figures( $s[1] / 225 )['q']['material'] ) . ' ka banta hai, labour aur shuttering alag. Apni chhat ka hisaab <a href="' . esc_url( home_url( '/lanter-roof-slab-cost-pakistan/' ) ) . '">lanter calculator</a> ya <a href="' . esc_url( HCC_SLAB_SITE ) . '">SlabCostCalculator.com</a> par lagayein.' ),
 		);
 	}
 	if ( 0 === strpos( $variant, 'city-' ) ) {

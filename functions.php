@@ -4,7 +4,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HCC_VERSION', '1.14.0' );
+define( 'HCC_VERSION', '1.14.1' );
 
 require get_template_directory() . '/inc/shortcode-calculator.php';
 // v1.8.0 SEO-audit implementation (see docs in the delivery package).
@@ -220,6 +220,8 @@ function hcc_page_definitions() {
 <h2>Ways to Save on a 5 Marla House Budget</h2>
 <p>On a smaller plot, every rupee of wastage matters proportionally more than on a large plot. A few practical ways to keep a 5 Marla construction budget under control: finalize your layout and Bill of Quantities before starting rather than changing the design mid-construction; stick to standard door, window and tile sizes to avoid custom fabrication and cutting waste; buy cement and steel directly rather than through a contractor markup where possible; and consider building the grey structure first and phasing finishing work (flooring, paint, fixtures) as your budget allows. The <a href="{$hcc_home}">full construction cost guide</a> on our home page covers these strategies in more detail.</p>
 
+[hcc_plot_lanter marla="5"]
+
 [hcc_faq variant="5-marla"]
 HTML;
 
@@ -272,6 +274,8 @@ HTML;
 
 <h2>Ways to Save on a 7 Marla House Budget</h2>
 <p>Because a 7 Marla plot sits between the most common "starter" and "family" sizes, a frequent budgeting mistake is under-costing finishing work while planning generously for structure. Get quotations for flooring, sanitary fixtures and electrical fittings early, not just for cement and steel, since finishing makes up about {$finish_share}% of a standard complete house's cost in this calculator. Other savings strategies — simplifying the design, buying materials in bulk, phasing finishing work — are covered in the <a href="{$hcc_home}">full construction cost guide</a> on our home page.</p>
+[hcc_plot_lanter marla="7"]
+
 [hcc_faq variant="7-marla"]
 HTML;
 
@@ -325,6 +329,8 @@ HTML;
 <h2>Ways to Save on a 10 Marla House Budget</h2>
 <p>At this size, structural decisions have an outsized effect on the final bill — an efficient, mostly-rectangular layout with fewer cantilevers and curved walls can save several percent on both steel and formwork labour compared with an architecturally complex design at the same quality tier (try switching "Design Complexity" in the calculator above to see the difference). Getting at least three itemized quotations, buying cement and steel directly, and budgeting separately for boundary wall and government approval fees — which are easy to forget on a plot this size — are covered in more detail in the <a href="{$hcc_home}">full construction cost guide</a> on our home page.</p>
 
+[hcc_plot_lanter marla="10"]
+
 [hcc_faq variant="10-marla"]
 HTML;
 
@@ -377,6 +383,8 @@ HTML;
 
 <h2>Ways to Save on a 1 Kanal House Budget</h2>
 <p>On a project this size, even a small percentage saving is a large absolute amount — which is exactly why finalizing drawings and a full Bill of Quantities before breaking ground matters most here. Buying cement and steel in bulk directly from suppliers (rather than through a contractor markup), getting at least three detailed, itemized quotations, and keeping the structural design efficient rather than architecturally complex can each save several percent. These strategies, along with a full grey-vs-complete-vs-turnkey comparison, are covered in the <a href="{$hcc_home}">full construction cost guide</a> on our home page.</p>
+[hcc_plot_lanter marla="20"]
+
 [hcc_faq variant="1-kanal"]
 HTML;
 
