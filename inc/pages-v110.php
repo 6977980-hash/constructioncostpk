@@ -57,6 +57,33 @@ function hcc_sc_lanter_table() {
 }
 add_shortcode( 'hcc_lanter_table', 'hcc_sc_lanter_table' );
 
+/** v1.14.1 — [hcc_plot_lanter marla="7"]: the lanter (roof slab) cost of one plot size, for "7 marla lanter cost" searches that land on plot pages. */
+function hcc_plot_lanter_figures( $marla ) {
+	$area = hcc_suggest_covered_area( max( 1, (float) $marla ) * 225, 1 );
+	return array( 'area' => $area, 'q' => hcc_lanter_qty( $area ) );
+}
+function hcc_plot_label( $marla ) {
+	$m = (float) $marla;
+	return 0 == fmod( $m, 20 ) ? hcc_num( $m / 20 ) . ' Kanal' : hcc_num( $m, 1 ) . ' Marla';
+}
+function hcc_sc_plot_lanter( $atts ) {
+	$a = shortcode_atts( array( 'marla' => 5 ), $atts );
+	$label = hcc_plot_label( $a['marla'] );
+	$f = hcc_plot_lanter_figures( $a['marla'] );
+	$q = $f['q'];
+	$rows = array();
+	foreach ( array( 1 => 'Single storey (1 lanter)', 2 => 'Double storey (2 lanters)' ) as $n => $name ) {
+		$rows[] = array( $name, number_format( $f['area'] * $n ) . ' sq ft', number_format( round( $q['cement'] * $n ) ) . ' bags', number_format( round( $q['steel'] * $n ) ) . ' kg', number_format( round( $q['sand'] * $n ) ) . ' / ' . number_format( round( $q['crush'] * $n ) ) . ' cft', hcc_pkr( $q['material'] * $n ) );
+	}
+	$lanter_url = esc_url( home_url( '/lanter-roof-slab-cost-pakistan/' ) );
+	$slab = defined( 'HCC_SLAB_SITE' ) ? ' or the detailed estimator on our sister site <a href="' . esc_url( HCC_SLAB_SITE ) . '" rel="noopener" target="_blank">SlabCostCalculator.com</a>' : '';
+	return '<h2>' . esc_html( $label ) . ' lanter (roof slab) cost</h2>'
+		. '<p>The lanter of a single storey ' . esc_html( $label ) . ' house covers about <strong>' . number_format( $f['area'] ) . ' sq ft</strong>. A 5 inch, 1:2:4 RCC slab of that size needs about ' . number_format( round( $q['cement'] ) ) . ' cement bags and ' . number_format( round( $q['steel'] ) ) . ' kg saria, which is about <strong>' . hcc_format_pkr( $q['material'] ) . '</strong> in materials (PKR ' . number_format( round( $q['per_sqft'] ) ) . ' per sq ft), before labour and shuttering. ' . esc_html( strtolower( $label ) ) . ' ka lanter sirf material mein taqreeban PKR ' . hcc_lakh_crore( $q['material'] ) . ' ka padta hai.</p>'
+		. hcc_table( array( 'Option', 'Slab area', 'Cement', 'Steel', 'Sand / crush', 'Material cost' ), $rows )
+		. '<p class="hint">Calculator default rates (' . esc_html( hcc_rates_date_human() ) . '). For your own roof size, thickness or mix use our <a href="' . $lanter_url . '">lanter cost calculator</a>' . $slab . '.</p>';
+}
+add_shortcode( 'hcc_plot_lanter', 'hcc_sc_plot_lanter' );
+
 /** [hcc_lanter_calc] — roof slab materials and cost for any area. */
 function hcc_sc_lanter_calc() {
 	$r = hcc_default_calc_rates();
@@ -211,6 +238,8 @@ function hcc_v110_page_definitions() {
 <h2>6 Marla vs 5 Marla and 7 Marla</h2>
 <p>Going up to 7 Marla adds 225 sq ft of land and about {$diff6_7} of single storey construction. Compare the <a href="{$u('5-marla-house-construction-cost')}">5 Marla house estimate</a> and <a href="{$u('7-marla-house-construction-cost')}">what a 7 Marla house costs</a>, or see every size in our <a href="{$u('construction-cost-guides')}">construction cost guides</a>.</p>
 
+[hcc_plot_lanter marla="6"]
+
 [hcc_faq variant="6-marla"]
 HTML
 	);
@@ -249,6 +278,8 @@ HTML
 <h2>8 Marla vs 10 Marla</h2>
 <p>A 10 Marla double storey house costs about {$e10d['total']}, compared with {$e8['total']} for 8 Marla. See the <a href="{$u('10-marla-house-construction-cost')}">10 Marla double storey cost</a>, the smaller <a href="{$u('7-marla-house-construction-cost')}">7 Marla house cost</a>, or the <a href="{$u('double-storey-house-construction-cost')}">double storey cost for every plot size</a>.</p>
 
+[hcc_plot_lanter marla="8"]
+
 [hcc_faq variant="8-marla"]
 HTML
 	);
@@ -279,6 +310,8 @@ HTML
 
 <h2>2 Kanal vs two 1 Kanal houses</h2>
 <p>Because the allowed coverage falls on bigger plots, one 2 Kanal house ({$e2k['total']}) costs about {$save2k} {$cmp2k} than building two 1 Kanal houses ({$e1k['total']} each). See the <a href="{$u('1-kanal-house-construction-cost')}">1 Kanal build budget</a>, the <a href="{$u('marla-kanal-standards-pakistan')}">Marla and Kanal converter</a>, or every size in our <a href="{$u('construction-cost-guides')}">cost guides hub</a>.</p>
+
+[hcc_plot_lanter marla="40"]
 
 [hcc_faq variant="2-kanal"]
 HTML

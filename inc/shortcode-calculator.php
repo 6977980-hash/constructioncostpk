@@ -1146,7 +1146,7 @@ function hcc_render_schema_custom( $faqs, $app_url, $app_name, $app_description,
 			'name'           => $item['q'],
 			'acceptedAnswer' => array(
 				'@type' => 'Answer',
-				'text'  => $item['a'],
+				'text'  => wp_strip_all_tags( $item['a'] ),
 			),
 		);
 	}

@@ -86,6 +86,8 @@ function hcc_v18_page_definitions() {
 </ul>
 <p>Compare with the <a href="{$u('4-marla-house-construction-cost')}">4 Marla construction budget</a> or the <a href="{$u('5-marla-house-construction-cost')}">5 Marla house estimate</a>, or price the structure alone with the <a href="{$u('grey-structure-cost-calculator')}">grey structure calculator</a>. All plot sizes are listed in our <a href="{$u('construction-cost-guides')}">construction cost guides</a>.</p>
 
+[hcc_plot_lanter marla="3"]
+
 [hcc_faq variant="3-marla"]
 HTML
 	);
@@ -124,6 +126,8 @@ HTML
 
 <h2>4 Marla vs 5 Marla: is the extra Marla worth it?</h2>
 <p>A 5 Marla plot adds 225 sq ft of land and about {$e4['extra_covered']} sq ft of single storey covered area. At standard quality that is roughly {$e4['diff5_fmt']} more construction cost — see the <a href="{$u('5-marla-house-construction-cost')}">5 Marla house estimate</a> for the full breakdown, or the smaller <a href="{$u('3-marla-house-construction-cost')}">cost of a 3 Marla home</a>. Every size is compared in our <a href="{$u('construction-cost-guides')}">cost guides hub</a>.</p>
+
+[hcc_plot_lanter marla="4"]
 
 [hcc_faq variant="4-marla"]
 HTML
@@ -420,6 +424,7 @@ function hcc_material_faq_items( $m ) {
 			array( 'q' => 'Grade 40 or Grade 60 steel — which is better for a house?', 'a' => 'Grade 60 (about 420 MPa yield strength) is the standard for houses today and is what most structural drawings specify. Use the grade your structural engineer specifies.' ),
 			array( 'q' => 'Saria ka rate aaj kal kya hai?', 'a' => 'Hamara planning rate PKR ' . number_format( $r['steel'] ) . ' per kg (Grade 60) hai. Asal rate brand aur sheher ke hisaab se badalta hai — khareedne se pehle dealer se aaj ka rate confirm karein.' ),
 			array( 'q' => '1 man sariya kitne ka hai?', 'a' => '1 man 40 kg ka hota hai, is liye PKR ' . number_format( $r['steel'] ) . ' per kg ke hisaab se 1 man sariya taqreeban PKR ' . number_format( $r['steel'] * 40 ) . ' ka, aur 1 ton (1,000 kg) taqreeban PKR ' . number_format( $r['steel'] * 1000 ) . ' ka banta hai.' ),
+			array( 'q' => '50 kg sariya ka rate kya hai?', 'a' => 'PKR ' . number_format( $r['steel'] ) . ' per kg ke hisaab se 50 kg sariya taqreeban PKR ' . number_format( $r['steel'] * 50 ) . ' ka banta hai (Grade 60, ' . hcc_rates_date_human() . '). Sariya kg ke hisaab se bikta hai, is liye 50 kg ki qeemat per kg rate ke saath badalti hai.' ),
 			array( 'q' => '4 sut sariya ka rate kya hai?', 'a' => '4 sut (12 mm) sariya ka wazan taqreeban ' . hcc_num( hcc_steel_sut_kg_ft( 12 ), 2 ) . ' kg per foot hai, yani 40 foot ka ek sariya taqreeban ' . hcc_num( hcc_steel_sut_kg_ft( 12 ) * 40, 1 ) . ' kg ka aur PKR ' . number_format( round( hcc_steel_sut_kg_ft( 12 ) * 40 * $r['steel'], -1 ) ) . ' ka. 3 sut (10 mm) ka 40 foot sariya taqreeban PKR ' . number_format( round( hcc_steel_sut_kg_ft( 10 ) * 40 * $r['steel'], -1 ) ) . ' ka hai. Poori list upar sut-wise table mein hai.' ),
 			array( 'q' => 'Lanter mein kitna sariya lagta hai?', 'a' => '5 inch ke aam lanter mein taqreeban ' . hcc_lanter_defaults()['steel'] . ' kg sariya per sq ft lagta hai, yani 1,000 sq ft chhat mein taqreeban ' . number_format( round( hcc_lanter_defaults()['steel'] * 1000 ) ) . ' kg. Apni chhat ka hisaab hamare <a href="' . esc_url( home_url( '/lanter-roof-slab-cost-pakistan/' ) ) . '">lanter calculator</a> ya sister site <a href="' . esc_url( HCC_SLAB_SITE ) . '">SlabCostCalculator.com</a> par lagayein.' ),
 		);
