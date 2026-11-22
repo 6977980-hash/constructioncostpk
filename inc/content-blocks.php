@@ -537,6 +537,13 @@ function hcc_city_faq_items( $city ) {
 	if ( isset( $authority[ $city ] ) ) {
 		$items[] = array( 'q' => 'Who approves house maps in ' . $L . '?', 'a' => $authority[ $city ] . ' Fees change — always get the current schedule from the relevant authority before budgeting.' );
 	}
+	$cf = hcc_city_factors();
+	$f = isset( $cf[ $city ] ) ? $cf[ $city ] : 1;
+	$ql = hcc_quality_table();
+	$items[] = array(
+		'q' => 'What is the grey structure labour rate per sq ft in ' . $L . '?',
+		'a' => 'A labour-only (theka labour) contract for grey structure in ' . $L . ' costs about PKR ' . number_format( round( $ql['standard']['greyLabour'] * $f ) ) . ' per sq ft at standard quality (economy about PKR ' . number_format( round( $ql['economy']['greyLabour'] * $f ) ) . ', premium about PKR ' . number_format( round( $ql['premium']['greyLabour'] * $f ) ) . '). You buy the cement, steel, bricks, sand and crush yourself. With material, grey structure comes to about ' . hcc_format_pkr( $grey ) . ' per sq ft.',
+	);
 	$first = hcc_city_plot_defs( $city )[0];
 	$e = hcc_estimate( $first[1], $first[2], 'complete', 'standard', $city );
 	$items[] = array(
