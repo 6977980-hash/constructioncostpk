@@ -216,7 +216,7 @@ function hcc_seo_meta_map() {
 			'desc'  => 'A complete house in Pakistan costs about PKR ' . number_format( round( $l ) ) . '/sq ft, grey structure PKR ' . number_format( round( $g ) ) . '/sq ft (' . $y . ', Lahore). Free calculator for your city + PDF.',
 		),
 		'grey-structure-cost-calculator' => array(
-			'title' => 'Grey Structure Cost Calculator Pakistan ' . $y . ' (Per Sq Ft Rates)',
+			'title' => 'Grey Structure Cost per Sq Ft ' . $y . ': PKR ' . number_format( round( $g ) ) . ' (Pakistan Calculator)',
 			'desc'  => 'Grey structure costs about PKR ' . number_format( round( $g ) ) . ' per sq ft in Lahore (' . $y . ') — PKR ' . hcc_lakh_crore( $e5g['grandTotal'] ) . ' for a 5 Marla house. Free calculator with materials & PDF.',
 		),
 		'5-marla-house-construction-cost' => array(
@@ -316,7 +316,7 @@ function hcc_seo_meta_map() {
 			'desc'  => 'Cement ki ek bori: PKR ' . number_format( hcc_default_calc_rates()['cement'] ) . ' planning rate, checked ' . hcc_rates_date_human() . '. Brands (Lucky, DG, Bestway, Maple Leaf) and bags needed for 3 Marla to 1 Kanal houses.',
 		),
 		'steel-saria-rate-today' => array(
-			'title' => 'Sariya Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per Man, Sut-wise (' . hcc_rates_month() . ')',
+			'title' => 'Sariya Rate Today: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . '/Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 50 ) . ' per 50 Kg, ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per Man (' . hcc_rates_month() . ')',
 			'desc'  => 'Aaj ka sariya rate: PKR ' . number_format( hcc_default_calc_rates()['steel'] ) . ' per kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 40 ) . ' per man (40 kg), PKR ' . number_format( hcc_default_calc_rates()['steel'] * 50 ) . ' per 50 kg, PKR ' . number_format( hcc_default_calc_rates()['steel'] * 1000 ) . ' per ton. 3, 4, 5 sut rate per foot & per 40 ft bar (Grade 60, ' . hcc_rates_date_human() . ').',
 		),
 		'pakistan-construction-cost-index' => array(
